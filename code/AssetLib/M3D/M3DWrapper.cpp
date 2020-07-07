@@ -128,7 +128,7 @@ void M3DWrapper::reset() {
 }
 
 unsigned char *M3DWrapper::Save(int quality, int flags, unsigned int &size) {
-#if (!(ASSIMP_BUILD_NO_EXPORT || ASSIMP_BUILD_NO_M3D_EXPORTER))
+#if (!(ASSIMP_BUILD_NO_EXPORT || !ASSIMP_BUILD_NO_M3D_EXPORTER))
     ClearSave();
     saved_output_ = m3d_save(m3d_, quality, flags, &size);
     return saved_output_;

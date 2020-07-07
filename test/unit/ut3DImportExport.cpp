@@ -46,9 +46,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 
-
 using namespace Assimp;
-
 
 TEST(ut3DImportExport, importBoxA) {
     Assimp::Importer importer;
@@ -56,13 +54,11 @@ TEST(ut3DImportExport, importBoxA) {
     ASSERT_NE(nullptr, scene);
 }
 
-
 TEST(ut3DImportExport, importBoxD) {
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/3D/box_d.3d", aiProcess_ValidateDataStructure);
     ASSERT_NE(nullptr, scene);
 }
-
 
 TEST(ut3DImportExport, importBoxUC) {
     Assimp::Importer importer;

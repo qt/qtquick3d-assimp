@@ -254,6 +254,11 @@ MACRO(ADD_ASSIMP_IMPORTER name)
 ENDMACRO()
 
 if (NOT ASSIMP_NO_EXPORT)
+  IF( NOT ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT )
+    message("here")
+    set(ASSIMP_EXPORTER_ENABLED FALSE)
+    set( ASSIMP_NO_EXPORT ON )
+  ENDIF()
 
   # if this variable is set to TRUE, the user can manually disable exporters by setting
   # ASSIMP_BUILD_XXX_EXPORTER to FALSE for each exporter
@@ -279,6 +284,9 @@ if (NOT ASSIMP_NO_EXPORT)
       SET(ASSIMP_EXPORTERS_ENABLED "${ASSIMP_EXPORTERS_ENABLED} ${name}")
       LIST(APPEND ASSIMP_EXPORTER_SRCS ${ARGN})
       SOURCE_GROUP(AssetLib\\${name} FILES ${ARGN})
+    ELSEIF( NOT ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT )
+      message("here")
+      set(ASSIMP_EXPORTER_ENABLED FALSE)
     ELSE()
       SET(ASSIMP_EXPORTERS_DISABLED "${ASSIMP_EXPORTERS_DISABLED} ${name}")
       add_definitions(-DASSIMP_BUILD_NO_${name}_EXPORTER)

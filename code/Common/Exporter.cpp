@@ -139,6 +139,9 @@ void ExportSceneM3DA(const char*, IOSystem*, const aiScene*, const ExportPropert
 void ExportAssimp2Json(const char* , IOSystem*, const aiScene* , const Assimp::ExportProperties*);
 #endif
 
+#if (_MSC_VER > 1200)
+#   pragma warning( disable  : 4100 )
+#endif 
 static void setupExporterArray(std::vector<Exporter::ExportFormatEntry> &exporters) {
 #ifndef ASSIMP_BUILD_NO_COLLADA_EXPORTER
 	exporters.push_back(Exporter::ExportFormatEntry("collada", "COLLADA - Digital Asset Exchange Schema", "dae", &ExportSceneCollada));

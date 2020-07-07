@@ -45,6 +45,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "Main.h"
 #include "PostProcessing/ProcessHelper.h"
+#include "Common/assbin_chunks.h"
+#include <assimp/DefaultIOSystem.h>
+#include "AssetLib/Assbin/AssbinFileWriter.h"
+#include "AssetLib/Assxml/AssxmlFileWriter.h"
+
+#include <memory>
 
 const char *AICMD_MSG_DUMP_HELP =
         "assimp dump <model> [<out>] [-b] [-s] [-z] [common parameters]\n"
@@ -55,13 +61,6 @@ const char *AICMD_MSG_DUMP_HELP =
         "\t -cfast    Fast post processing preset, runs just a few important steps \n"
         "\t -cdefault Default post processing: runs all recommended steps\n"
         "\t -cfull    Fires almost all post processing steps \n";
-
-#include "Common/assbin_chunks.h"
-#include <assimp/DefaultIOSystem.h>
-#include "AssetLib/Assbin/AssbinFileWriter.h"
-#include "AssetLib/Assxml/AssxmlFileWriter.h"
-
-#include <memory>
 
 FILE *out = nullptr;
 bool shortened = false;
@@ -77,7 +76,7 @@ int Assimp_Dump(const char *const *params, unsigned int num) {
         return AssimpCmdError::Success;
     }
 
-    // asssimp dump in out [options]
+    // assimp dump in out [options]
     if (num < 1) {
         printf("%s", fail);
         return AssimpCmdError::InvalidNumberOfArguments;
@@ -136,7 +135,7 @@ int Assimp_Dump(const char *const *params, unsigned int num) {
 
     // import the main model
     const aiScene *scene = ImportModel(import, in);
-    if (!scene) {
+    if (nullptr == scene) {
         printf("assimp dump: Unable to load input file %s\n", in.c_str());
         return AssimpCmdError::FailedToLoadInputFile;
     }
@@ -160,5 +159,6 @@ int Assimp_Dump(const char *const *params, unsigned int num) {
     }
 
     printf("assimp dump: Wrote output dump %s\n", cur_out.c_str());
+
     return AssimpCmdError::Success;
 }
