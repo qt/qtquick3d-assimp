@@ -44,6 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef ASSIMP_BUILD_NO_GLTF_IMPORTER
 
 #include <assimp/Exceptional.h>
+#include <assimp/StringUtils.h>
 
 #include <algorithm>
 #include <list>
@@ -51,36 +52,49 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <set>
+
+#if (__GNUC__ == 8 && __GNUC_MINOR__ >= 0)
+#   pragma GCC diagnostic push
+#   pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+
 
 #define RAPIDJSON_HAS_STDSTRING 1
 #define RAPIDJSON_NOMEMBERITERATORCLASS
+
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
 #include <rapidjson/rapidjson.h>
 
+#if (__GNUC__ == 8 && __GNUC_MINOR__ >= 0)
+#   pragma GCC diagnostic pop
+#endif
+
 #ifdef ASSIMP_API
-#include <assimp/ByteSwapper.h>
-#include <assimp/DefaultIOSystem.h>
-#include <memory>
+#   include <assimp/ByteSwapper.h>
+#   include <assimp/DefaultIOSystem.h>
+#   include <memory>
 #else
-#include <memory>
-#define AI_SWAP4(p)
-#define ai_assert
+#   include <memory>
+#   define AI_SWAP4(p)
+#   define ai_assert
 #endif
 
 #if _MSC_VER > 1500 || (defined __GNUC___)
-#define ASSIMP_GLTF_USE_UNORDERED_MULTIMAP
+#   define ASSIMP_GLTF_USE_UNORDERED_MULTIMAP
 #else
-#define gltf_unordered_map map
+#   define gltf_unordered_map map
 #endif
 
 #ifdef ASSIMP_GLTF_USE_UNORDERED_MULTIMAP
-#include <unordered_map>
-#if _MSC_VER > 1600
-#define gltf_unordered_map unordered_map
-#else
-#define gltf_unordered_map tr1::unordered_map
-#endif
+#   include <unordered_map>
+#   if _MSC_VER > 1600
+#       define gltf_unordered_map unordered_map
+#    else
+#       define gltf_unordered_map tr1::unordered_map
+#       define gltf_unordered_set set
+#    endif
 #endif
 
 namespace glTFCommon {
