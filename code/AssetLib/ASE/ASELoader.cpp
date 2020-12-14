@@ -5,8 +5,6 @@ Open Asset Import Library (assimp)
 
 Copyright (c) 2006-2020, assimp team
 
-
-
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,
@@ -85,7 +83,11 @@ static const aiImporterDesc desc = {
 // ------------------------------------------------------------------------------------------------
 // Constructor to be privately used by Importer
 ASEImporter::ASEImporter() :
-        mParser(), mBuffer(), pcScene(), configRecomputeNormals(), noSkeletonMesh() {
+        mParser(),
+        mBuffer(),
+        pcScene(),
+        configRecomputeNormals(),
+        noSkeletonMesh() {
     // empty
 }
 

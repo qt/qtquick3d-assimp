@@ -56,20 +56,20 @@ namespace Assimp {
 #ifndef ASSIMP_BUILD_NO_3DS_IMPORTER
 
 // --------------------------------------------------------------------------------
-/** Importer class for the 3DS ASE ASCII format.
- *
- */
-class ASEImporter : public BaseImporter {
+/// @brief  Importer class for the 3DS ASE ASCII format.
+// --------------------------------------------------------------------------------
+class ASEImporter final : public BaseImporter {
 public:
+    /// @brief  The default class constructor.
     ASEImporter();
-    ~ASEImporter();
+
+    /// @brief  The class destructor.
+    ~ASEImporter() override;
 
     // -------------------------------------------------------------------
-    /** Returns whether the class can handle the format of the given file.
-     * See BaseImporter::CanRead() for details.
-     */
-    bool CanRead( const std::string& pFile, IOSystem* pIOHandler,
-        bool checkSig) const;
+    /// @brief  Returns whether the class can handle the format of the given file.
+    /// See BaseImporter::CanRead() for details.
+    bool CanRead( const std::string& pFile, IOSystem* pIOHandler, bool checkSig) const override;
 
 protected:
 
@@ -77,15 +77,14 @@ protected:
     /** Return importer meta information.
      * See #BaseImporter::GetInfo for the details
      */
-    const aiImporterDesc* GetInfo () const;
+    const aiImporterDesc* GetInfo () const override;
 
 
     // -------------------------------------------------------------------
     /** Imports the given file into the given scene structure.
     * See BaseImporter::InternReadFile() for details
     */
-    void InternReadFile( const std::string& pFile, aiScene* pScene,
-        IOSystem* pIOHandler);
+    void InternReadFile( const std::string& pFile, aiScene* pScene, IOSystem* pIOHandler) override;
 
 
     // -------------------------------------------------------------------
@@ -93,11 +92,10 @@ protected:
     * The function is a request to the importer to update its configuration
     * basing on the Importer's configuration property list.
     */
-    void SetupProperties(const Importer* pImp);
+    void SetupProperties(const Importer* pImp) override;
 
 
 private:
-
     // -------------------------------------------------------------------
     /** Generate normal vectors basing on smoothing groups
      * (in some cases the normal are already contained in the file)
@@ -117,8 +115,8 @@ private:
 
 
     /** Create one-material-per-mesh meshes ;-)
-     * \param mesh Mesh to work with
-     *  \param Receives the list of all created meshes
+     * \param mesh  Mesh to work with
+     * \param avOut Receives the list of all created meshes
      */
     void ConvertMeshes(ASE::Mesh& mesh, std::vector<aiMesh*>& avOut);
 
@@ -183,18 +181,9 @@ private:
     void GenerateDefaultMaterial();
 
 protected:
-
-    /** Parser instance */
     ASE::Parser* mParser;
-
-    /** Buffer to hold the loaded file */
     char* mBuffer;
-
-    /** Scene to be filled */
     aiScene* pcScene;
-
-    /** Config options: Recompute the normals in every case - WA
-        for 3DS Max broken ASE normal export */
     bool configRecomputeNormals;
     bool noSkeletonMesh;
 };

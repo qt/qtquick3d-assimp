@@ -116,7 +116,7 @@ struct Material : public D3DS::Material {
         return *this;
     }
 
-    ~Material() {}
+    ~Material() = default;
 
     //! Contains all sub materials of this material
     std::vector<Material> avSubMaterials;
@@ -178,7 +178,7 @@ struct Bone {
 /** Helper structure to represent an ASE file bone vertex */
 struct BoneVertex {
     //! Bone and corresponding vertex weight.
-    //! -1 for unrequired bones ....
+    //! -1 for not required bones ....
     std::vector<std::pair<int, float>> mBoneWeights;
 };
 
@@ -239,9 +239,13 @@ struct BaseNode {
         Dummy
     } mType;
 
-    //! Construction from an existing name
-    BaseNode(Type _mType, const std::string &name) :
-            mType(_mType), mName(name), mProcessed(false) {
+    /// Construction from an existing name
+    /// @param  type    The node type
+    /// @param  name    The node name
+    BaseNode(Type type, const std::string &name) :
+            mType(type),
+            mName(name),
+            mProcessed(false) {
         // Set mTargetPosition to qnan
         const ai_real qnan = get_qnan();
         mTargetPosition.x = qnan;

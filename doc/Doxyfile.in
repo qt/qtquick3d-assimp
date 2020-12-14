@@ -197,7 +197,7 @@ SEPARATE_MEMBER_PAGES  = NO
 # The TAB_SIZE tag can be used to set the number of spaces in a tab. 
 # Doxygen uses this value to replace tabs by spaces in code fragments.
 
-TAB_SIZE               = 8
+TAB_SIZE               = 4
 
 # This tag can be used to specify a number of aliases that acts 
 # as commands in the documentation. An alias has the form "name=value". 
@@ -381,7 +381,7 @@ EXTRACT_STATIC         = YES
 # defined locally in source files will be included in the documentation. 
 # If set to NO only classes defined in header files are included.
 
-EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_CLASSES  = NO
 
 # This flag is only useful for Objective-C code. When set to YES local 
 # methods, which are defined in the implementation section but not in 
@@ -663,8 +663,6 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = @doxy_main_page@ \
-                         @PROJECT_SOURCE_DIR@ \
-                         @PROJECT_BINARY_DIR@ \
                          @PROJECT_SOURCE_DIR@/include/ \
                          @PROJECT_SOURCE_DIR@/doc/dox.h \
                          @PROJECT_SOURCE_DIR@/code/BaseImporter.h
@@ -725,7 +723,8 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is 
 # run.
 
-EXCLUDE                = irrXML.h
+EXCLUDE                = irrXML.h \
+                         @PROJECT_SOURCE_DIR@/contrib/*
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or 
 # directories that are symbolic links (a Unix file system feature) are excluded 
@@ -740,7 +739,8 @@ EXCLUDE_SYMLINKS       = NO
 # for example use the pattern */test/*
 
 EXCLUDE_PATTERNS       = */.svn/* \
-                         */.svn
+                         */.svn \
+                         */.git
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names 
 # (namespaces, classes, functions, etc.) that should be excluded from the 

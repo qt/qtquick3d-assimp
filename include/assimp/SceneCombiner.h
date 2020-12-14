@@ -55,8 +55,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/ai_assert.h>
 #include <assimp/types.h>
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 #include <list>
 #include <set>
 #include <vector>
@@ -141,7 +141,7 @@ struct NodeAttachmentInfo {
  */
 #define AI_INT_MERGE_SCENE_GEN_UNIQUE_NAMES_IF_NECESSARY 0x10
 
-typedef std::pair<aiBone *, unsigned int> BoneSrcIndex;
+using BoneSrcIndex = std::pair<aiBone *, unsigned int>;
 
 // ---------------------------------------------------------------------------
 /** @brief Helper data structure for SceneCombiner::MergeBones.
@@ -187,7 +187,7 @@ struct SceneHelper {
  *    scenes. It is intended as internal utility and NOT for use by
  *    applications.
  *
- * The class is currently being used by various postprocessing steps
+ * The class is currently being used by various post-processing steps
  * and loaders (ie. LWS).
  */
 class ASSIMP_API SceneCombiner {
