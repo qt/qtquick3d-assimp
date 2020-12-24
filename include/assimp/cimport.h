@@ -60,7 +60,7 @@ extern "C" {
 struct aiScene;
 struct aiFileIO;
 
-typedef void (*aiLogStreamCallback)(const char * /* message */, char * /* user */);
+using aiLogStreamCallback = void (*)(const char * /* message */, char * /* user */);
 
 // --------------------------------------------------------------------------------
 /** C-API: Represents a log stream. A log stream receives all log messages and
@@ -93,7 +93,7 @@ struct aiPropertyStore {
 };
 
 /** Our own C boolean type */
-typedef int aiBool;
+using aiBool = int;
 
 #define AI_FALSE 0
 #define AI_TRUE 1
@@ -706,7 +706,6 @@ ASSIMP_API int aiVector3AreEqualEpsilon(
 /** Check if vector \p a is less than vector \p b.
  *  @param a First vector to compare
  *  @param b Second vector to compare
- *  @param epsilon Epsilon
  *  @return 1 if \p a is less than \p b
  *  @return 0 if \p a is equal or greater than \p b
  */
@@ -1031,11 +1030,11 @@ ASSIMP_API void aiMatrix4DecomposeIntoScalingEulerAnglesPosition(
  *  rotational split into an axis and rotational angle,
  *  and it's translational components.
  *
- * @param mat Matrix to decompose
- * @param rotation Receives the rotational component
- * @param axis Receives the output rotation axis
- * @param angle Receives the output rotation angle
- * @param position Receives the output position for the x,y,z axes.
+ * @param mat       Matrix to decompose
+ * @param scaling   Receives the scaling component
+ * @param axis      Receives the output rotation axis
+ * @param angle     Receives the output rotation angle
+ * @param position  Receives the output position for the x,y,z axes.
  */
 ASSIMP_API void aiMatrix4DecomposeIntoScalingAxisAnglePosition(
         const C_STRUCT aiMatrix4x4 *mat,

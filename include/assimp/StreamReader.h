@@ -64,8 +64,7 @@ namespace Assimp {
  *  little and big endian format. Don't attempt to instance the template directly. Use
  *  StreamReaderLE to read from a little-endian stream and StreamReaderBE to read from a
  *  BE stream. The class expects that the endianness of any input data is known at
- *  compile-time, which should usually be true (#BaseImporter::ConvertToUTF8 implements
- *  runtime endianness conversions for text files).
+ *  compile-time, which should usually be true.
  *
  *  XXX switch from unsigned int for size types to size_t? or ptrdiff_t?*/
 // --------------------------------------------------------------------------------------------
@@ -76,7 +75,8 @@ public:
     using pos = size_t;
 
     // ---------------------------------------------------------------------
-    /** Construction from a given stream with a well-defined endianness.
+    /**
+     *  @brief  Construction from a given stream with a well-defined endianness.
      *
      *  The StreamReader holds a permanent strong reference to the
      *  stream, which is released upon destruction.
@@ -99,6 +99,10 @@ public:
     }
 
     // ---------------------------------------------------------------------
+    /// @brief  The class constructor with the steam and the endian working
+    ///         mode.
+    /// @param  stream  The input stream to read from.
+    /// @param  The endian working mode.
     StreamReader(IOStream *stream, bool le = false) :
             mStream(std::shared_ptr<IOStream>(stream)),
             mBuffer(nullptr),
@@ -111,6 +115,7 @@ public:
     }
 
     // ---------------------------------------------------------------------
+    /// @brief  The class destructor.
     ~StreamReader() {
         delete[] mBuffer;
     }
@@ -332,13 +337,13 @@ private:
 typedef StreamReader<true> StreamReaderLE;
 typedef StreamReader<false> StreamReaderBE;
 #else
-typedef StreamReader<true> StreamReaderBE;
-typedef StreamReader<false> StreamReaderLE;
+using StreamReaderBE = StreamReader<true>;
+using StreamReaderLE = StreamReader<false>;
 #endif
 
 // `dynamic` StreamReader. The byte order of the input data is specified in the
 // c'tor. This involves runtime branching and might be a little bit slower.
-typedef StreamReader<true, true> StreamReaderAny;
+using StreamReaderAny = StreamReader<true, true>;
 
 } // end namespace Assimp
 

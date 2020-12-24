@@ -5,8 +5,6 @@
 /**
 @mainpage assimp - Open Asset Import Library
 
-<img src="dragonsplash.png"></img>
-
 @section intro Introduction
 
 assimp is a library to load and process geometric scenes from various data formats. It is tailored at typical game
@@ -85,7 +83,7 @@ as long as you retain the license information and take own responsibility for wh
 the LICENSE file.
 
 You can find test models for almost all formats in the <assimp_root>/test/models directory. Beware, they're *free*,
-but not all of them are *open-source*. If there's an accompagning '<file>\source.txt' file don't forget to read it.
+but not all of them are *open-source*. If there's an accompagning '<file>\\source.txt' file don't forget to read it.
 
 @section main_install Installation
 

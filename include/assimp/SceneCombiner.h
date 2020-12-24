@@ -4,7 +4,6 @@ Open Asset Import Library (assimp)
 
 Copyright (c) 2006-2020, assimp team
 
-
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,
@@ -241,10 +240,10 @@ public:
      *  meshes should have the same material indices, too. The output
      *  material index is always the material index of the first mesh.
      *
-     *  @param dest Destination mesh. Must be empty.
-     *  @param flags Currently no parameters
-     *  @param begin First mesh to be processed
-     *  @param end Points to the mesh after the last mesh to be processed
+     *  @param dest     Destination mesh. Must be empty.
+     *  @param flags    Currently no parameters
+     *  @param begin    First mesh to be processed
+     *  @param end      Points to the mesh after the last mesh to be processed
      */
     static void MergeMeshes(aiMesh **dest, unsigned int flags,
             std::vector<aiMesh *>::const_iterator begin,
@@ -253,12 +252,12 @@ public:
     // -------------------------------------------------------------------
     /** Merges two or more bones
      *
-     *  @param out Mesh to receive the output bone list
-     *  @param flags Currently no parameters
-     *  @param begin First mesh to be processed
-     *  @param end Points to the mesh after the last mesh to be processed
+     *  @param out      Mesh to receive the output bone list
+     *  @param flags    Currently no parameters
+     *  @param begin    First mesh to be processed
+     *  @param end      Points to the mesh after the last mesh to be processed
      */
-    static void MergeBones(aiMesh *out, std::vector<aiMesh *>::const_iterator it,
+    static void MergeBones(aiMesh *out, std::vector<aiMesh *>::const_iterator begin,
             std::vector<aiMesh *>::const_iterator end);
 
     // -------------------------------------------------------------------
@@ -268,9 +267,9 @@ public:
      *  of a property present in different materials, the first occurrence
      *  is used.
      *
-     *  @param dest Destination material. Must be empty.
-     *  @param begin First material to be processed
-     *  @param end Points to the material after the last material to be processed
+     *  @param dest     Destination material. Must be empty.
+     *  @param begin    First material to be processed
+     *  @param end      Points to the material after the last material to be processed
      */
     static void MergeMaterials(aiMaterial **dest,
             std::vector<aiMaterial *>::const_iterator begin,
@@ -279,12 +278,12 @@ public:
     // -------------------------------------------------------------------
     /** Builds a list of uniquely named bones in a mesh list
      *
-     *  @param asBones Receives the output list
-     *  @param it First mesh to be processed
-     *  @param end Last mesh to be processed
+     *  @param asBones  Receives the output list
+     *  @param begin    First mesh to be processed
+     *  @param end      Last mesh to be processed
      */
     static void BuildUniqueBoneList(std::list<BoneWithHash> &asBones,
-            std::vector<aiMesh *>::const_iterator it,
+            std::vector<aiMesh *>::const_iterator begin,
             std::vector<aiMesh *>::const_iterator end);
 
     // -------------------------------------------------------------------

@@ -70,7 +70,7 @@ class ProgressHandler;
  * The interface is modeled after the importer interface and mostly
  * symmetric. The same rules for threading etc. apply.
  *
- * In a nutshell, there are two export interfaces: #Export, which writes the
+ * In a nutshell, there are two export interfaces: #aiExportScene, which writes the
  * output file(s) either to the regular file system or to a user-supplied
  * #IOSystem, and #ExportToBlob which returns a linked list of memory
  * buffers (blob), each referring to one output file (in most cases
