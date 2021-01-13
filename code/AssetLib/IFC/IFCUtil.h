@@ -4,7 +4,6 @@ Open Asset Import Library (assimp)
 
 Copyright (c) 2006-2020, assimp team
 
-
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,
@@ -47,39 +46,36 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef INCLUDED_IFCUTIL_H
 #define INCLUDED_IFCUTIL_H
 
-#include "AssetLib/IFC/IFCReaderGen_2x3.h"
 #include "AssetLib/IFC/IFCLoader.h"
+#include "AssetLib/IFC/IFCReaderGen_2x3.h"
 #include "AssetLib/Step/STEPFile.h"
 
-#include <assimp/mesh.h>
 #include <assimp/material.h>
+#include <assimp/mesh.h>
 
 struct aiNode;
 
 namespace Assimp {
 namespace IFC {
 
-    typedef double IfcFloat;
+using IfcFloat = double;
 
-    // IfcFloat-precision math data types
-    typedef aiVector2t<IfcFloat> IfcVector2;
-    typedef aiVector3t<IfcFloat> IfcVector3;
-    typedef aiMatrix4x4t<IfcFloat> IfcMatrix4;
-    typedef aiMatrix3x3t<IfcFloat> IfcMatrix3;
-    typedef aiColor4t<IfcFloat> IfcColor4;
-
+// IfcFloat-precision math data types
+using IfcVector2 = aiVector2t<IfcFloat>;
+using IfcVector3 = aiVector3t<IfcFloat>;
+using IfcMatrix4 = aiMatrix4x4t<IfcFloat>;
+using IfcMatrix3 = aiMatrix3x3t<IfcFloat>;
+using IfcColor4 = aiColor4t<IfcFloat>;
 
 // ------------------------------------------------------------------------------------------------
 // Helper for std::for_each to delete all heap-allocated items in a container
 // ------------------------------------------------------------------------------------------------
-template<typename T>
+template <typename T>
 struct delete_fun {
-    void operator()(T* del) {
+    void operator()(T *del) {
         delete del;
     }
 };
-
-
 
 // ------------------------------------------------------------------------------------------------
 // Helper used during mesh construction. Aids at creating aiMesh'es out of relatively few polygons.
@@ -89,32 +85,29 @@ struct TempMesh {
     std::vector<unsigned int> mVertcnt;
 
     // utilities
-    aiMesh* ToMesh();
+    aiMesh *ToMesh();
     void Clear();
-    void Transform(const IfcMatrix4& mat);
+    void Transform(const IfcMatrix4 &mat);
     IfcVector3 Center() const;
-    void Append(const TempMesh& other);
+    void Append(const TempMesh &other);
     bool IsEmpty() const;
     void RemoveAdjacentDuplicates();
     void RemoveDegenerates();
     void FixupFaceOrientation();
-    static IfcVector3 ComputePolygonNormal(const IfcVector3* vtcs, size_t cnt, bool normalize = true);
+    static IfcVector3 ComputePolygonNormal(const IfcVector3 *vtcs, size_t cnt, bool normalize = true);
     IfcVector3 ComputeLastPolygonNormal(bool normalize = true) const;
-    void ComputePolygonNormals(std::vector<IfcVector3>& normals, bool normalize = true, size_t ofs = 0) const;
-    void Swap(TempMesh& other);
+    void ComputePolygonNormals(std::vector<IfcVector3> &normals, bool normalize = true, size_t ofs = 0) const;
+    void Swap(TempMesh &other);
 };
 
-inline
-bool TempMesh::IsEmpty() const {
+inline bool TempMesh::IsEmpty() const {
     return mVerts.empty() && mVertcnt.empty();
 }
-
 
 // ------------------------------------------------------------------------------------------------
 // Temporary representation of an opening in a wall or a floor
 // ------------------------------------------------------------------------------------------------
-struct TempOpening
-{
+struct TempOpening {
     const IFC::Schema_2x3::IfcSolidModel *solid;
     IfcVector3 extrusionDir;
 
@@ -129,90 +122,98 @@ struct TempOpening
     std::vector<IfcVector3> wallPoints;
 
     // ------------------------------------------------------------------------------
-    TempOpening()
-        : solid()
-        , extrusionDir()
-        , profileMesh()
-    {
+    TempOpening() :
+            solid(),
+            extrusionDir(),
+            profileMesh() {
+        // empty
     }
 
     // ------------------------------------------------------------------------------
-    TempOpening(const IFC::Schema_2x3::IfcSolidModel* solid,IfcVector3 extrusionDir,
-        std::shared_ptr<TempMesh> profileMesh,
-        std::shared_ptr<TempMesh> profileMesh2D)
-        : solid(solid)
-        , extrusionDir(extrusionDir)
-        , profileMesh(profileMesh)
-        , profileMesh2D(profileMesh2D)
-    {
+    TempOpening(const IFC::Schema_2x3::IfcSolidModel *solid, IfcVector3 extrusionDir,
+            std::shared_ptr<TempMesh> profileMesh,
+            std::shared_ptr<TempMesh> profileMesh2D) :
+            solid(solid),
+            extrusionDir(extrusionDir),
+            profileMesh(profileMesh),
+            profileMesh2D(profileMesh2D) {
+        // empty
     }
 
     // ------------------------------------------------------------------------------
-    void Transform(const IfcMatrix4& mat); // defined later since TempMesh is not complete yet
-
-
+    void Transform(const IfcMatrix4 &mat); // defined later since TempMesh is not complete yet
 
     // ------------------------------------------------------------------------------
     // Helper to sort openings by distance from a given base point
     struct DistanceSorter {
 
-        DistanceSorter(const IfcVector3& base) : base(base) {}
+        DistanceSorter(const IfcVector3 &base) :
+                base(base) {}
 
-        bool operator () (const TempOpening& a, const TempOpening& b) const {
-            return (a.profileMesh->Center()-base).SquareLength() < (b.profileMesh->Center()-base).SquareLength();
+        bool operator()(const TempOpening &a, const TempOpening &b) const {
+            return (a.profileMesh->Center() - base).SquareLength() < (b.profileMesh->Center() - base).SquareLength();
         }
 
         IfcVector3 base;
     };
 };
 
-
 // ------------------------------------------------------------------------------------------------
 // Intermediate data storage during conversion. Keeps everything and a bit more.
 // ------------------------------------------------------------------------------------------------
-struct ConversionData
-{
-    ConversionData(const STEP::DB& db, const IFC::Schema_2x3::IfcProject& proj, aiScene* out,const IFCImporter::Settings& settings)
-        : len_scale(1.0)
-        , angle_scale(-1.0)
-        , db(db)
-        , proj(proj)
-        , out(out)
-        , settings(settings)
-        , apply_openings()
-        , collect_openings()
-    {}
+struct ConversionData {
+    ConversionData(const STEP::DB &db, const IFC::Schema_2x3::IfcProject &proj, aiScene *out, const IFCImporter::Settings &settings) :
+            len_scale(1.0),
+            angle_scale(-1.0),
+            plane_angle_in_radians(true),
+            db(db),
+            proj(proj),
+            out(out),
+            wcs(),
+            meshes(),
+            materials(),
+            cached_meshes(),
+            cached_materials(),
+            settings(settings),
+            apply_openings(nullptr),
+            collect_openings(nullptr),
+            already_processed() {
+        // empty
+    }
 
     ~ConversionData() {
-        std::for_each(meshes.begin(),meshes.end(),delete_fun<aiMesh>());
-        std::for_each(materials.begin(),materials.end(),delete_fun<aiMaterial>());
+        std::for_each(meshes.begin(), meshes.end(), delete_fun<aiMesh>());
+        std::for_each(materials.begin(), materials.end(), delete_fun<aiMaterial>());
     }
 
     IfcFloat len_scale, angle_scale;
     bool plane_angle_in_radians;
 
-    const STEP::DB& db;
-    const IFC::Schema_2x3::IfcProject& proj;
-    aiScene* out;
+    const STEP::DB &db;
+    const IFC::Schema_2x3::IfcProject &proj;
+    aiScene *out;
 
     IfcMatrix4 wcs;
-    std::vector<aiMesh*> meshes;
-    std::vector<aiMaterial*> materials;
+    std::vector<aiMesh *> meshes;
+    std::vector<aiMaterial *> materials;
 
     struct MeshCacheIndex {
-        const IFC::Schema_2x3::IfcRepresentationItem* item; unsigned int matindex;
-        MeshCacheIndex() : item(nullptr), matindex(0) { }
-        MeshCacheIndex(const IFC::Schema_2x3::IfcRepresentationItem* i, unsigned int mi) : item(i), matindex(mi) { }
-        bool operator == (const MeshCacheIndex& o) const { return item == o.item && matindex == o.matindex; }
-        bool operator < (const MeshCacheIndex& o) const { return item < o.item || (item == o.item && matindex < o.matindex); }
+        const IFC::Schema_2x3::IfcRepresentationItem *item;
+        unsigned int matindex;
+        MeshCacheIndex() :
+                item(nullptr), matindex(0) {}
+        MeshCacheIndex(const IFC::Schema_2x3::IfcRepresentationItem *i, unsigned int mi) :
+                item(i), matindex(mi) {}
+        bool operator==(const MeshCacheIndex &o) const { return item == o.item && matindex == o.matindex; }
+        bool operator<(const MeshCacheIndex &o) const { return item < o.item || (item == o.item && matindex < o.matindex); }
     };
-    typedef std::map<MeshCacheIndex, std::set<unsigned int> > MeshCache;
+    using MeshCache = std::map<MeshCacheIndex, std::set<unsigned int>>;
     MeshCache cached_meshes;
 
-    typedef std::map<const IFC::Schema_2x3::IfcSurfaceStyle*, unsigned int> MaterialCache;
+    using MaterialCache = std::map<const IFC::Schema_2x3::IfcSurfaceStyle *, unsigned int>;
     MaterialCache cached_materials;
 
-    const IFCImporter::Settings& settings;
+    const IFCImporter::Settings &settings;
 
     // Intermediate arrays used to resolve openings in walls: only one of them
     // can be given at a time. apply_openings if present if the current element
@@ -220,26 +221,25 @@ struct ConversionData
     // collect_openings is present only if the current element is an
     // IfcOpeningElement, for which all the geometry needs to be preserved
     // for later processing by a parent, which is a wall.
-    std::vector<TempOpening>* apply_openings;
-    std::vector<TempOpening>* collect_openings;
+    std::vector<TempOpening> *apply_openings;
+    std::vector<TempOpening> *collect_openings;
 
     std::set<uint64_t> already_processed;
 };
-
 
 // ------------------------------------------------------------------------------------------------
 // Binary predicate to compare vectors with a given, quadratic epsilon.
 // ------------------------------------------------------------------------------------------------
 struct FuzzyVectorCompare {
 
-    FuzzyVectorCompare(IfcFloat epsilon) : epsilon(epsilon) {}
-    bool operator()(const IfcVector3& a, const IfcVector3& b) {
-        return std::abs((a-b).SquareLength()) < epsilon;
+    FuzzyVectorCompare(IfcFloat epsilon) :
+            epsilon(epsilon) {}
+    bool operator()(const IfcVector3 &a, const IfcVector3 &b) {
+        return std::abs((a - b).SquareLength()) < epsilon;
     }
 
     const IfcFloat epsilon;
 };
-
 
 // ------------------------------------------------------------------------------------------------
 // Ordering predicate to totally order R^2 vectors first by x and then by y
@@ -247,7 +247,7 @@ struct FuzzyVectorCompare {
 struct XYSorter {
 
     // sort first by X coordinates, then by Y coordinates
-    bool operator () (const IfcVector2&a, const IfcVector2& b) const {
+    bool operator()(const IfcVector2 &a, const IfcVector2 &b) const {
         if (a.x == b.x) {
             return a.y < b.y;
         }
@@ -255,67 +255,61 @@ struct XYSorter {
     }
 };
 
-
-
 // conversion routines for common IFC entities, implemented in IFCUtil.cpp
-void ConvertColor(aiColor4D& out, const Schema_2x3::IfcColourRgb& in);
-void ConvertColor(aiColor4D& out, const Schema_2x3::IfcColourOrFactor& in,ConversionData& conv,const aiColor4D* base);
-void ConvertCartesianPoint(IfcVector3& out, const Schema_2x3::IfcCartesianPoint& in);
-void ConvertDirection(IfcVector3& out, const Schema_2x3::IfcDirection& in);
-void ConvertVector(IfcVector3& out, const Schema_2x3::IfcVector& in);
-void AssignMatrixAxes(IfcMatrix4& out, const IfcVector3& x, const IfcVector3& y, const IfcVector3& z);
-void ConvertAxisPlacement(IfcMatrix4& out, const Schema_2x3::IfcAxis2Placement3D& in);
-void ConvertAxisPlacement(IfcMatrix4& out, const Schema_2x3::IfcAxis2Placement2D& in);
-void ConvertAxisPlacement(IfcVector3& axis, IfcVector3& pos, const IFC::Schema_2x3::IfcAxis1Placement& in);
-void ConvertAxisPlacement(IfcMatrix4& out, const Schema_2x3::IfcAxis2Placement& in, ConversionData& conv);
-void ConvertTransformOperator(IfcMatrix4& out, const Schema_2x3::IfcCartesianTransformationOperator& op);
-bool IsTrue(const Assimp::STEP::EXPRESS::BOOLEAN& in);
-IfcFloat ConvertSIPrefix(const std::string& prefix);
-
+void ConvertColor(aiColor4D &out, const Schema_2x3::IfcColourRgb &in);
+void ConvertColor(aiColor4D &out, const Schema_2x3::IfcColourOrFactor &in, ConversionData &conv, const aiColor4D *base);
+void ConvertCartesianPoint(IfcVector3 &out, const Schema_2x3::IfcCartesianPoint &in);
+void ConvertDirection(IfcVector3 &out, const Schema_2x3::IfcDirection &in);
+void ConvertVector(IfcVector3 &out, const Schema_2x3::IfcVector &in);
+void AssignMatrixAxes(IfcMatrix4 &out, const IfcVector3 &x, const IfcVector3 &y, const IfcVector3 &z);
+void ConvertAxisPlacement(IfcMatrix4 &out, const Schema_2x3::IfcAxis2Placement3D &in);
+void ConvertAxisPlacement(IfcMatrix4 &out, const Schema_2x3::IfcAxis2Placement2D &in);
+void ConvertAxisPlacement(IfcVector3 &axis, IfcVector3 &pos, const IFC::Schema_2x3::IfcAxis1Placement &in);
+void ConvertAxisPlacement(IfcMatrix4 &out, const Schema_2x3::IfcAxis2Placement &in, ConversionData &conv);
+void ConvertTransformOperator(IfcMatrix4 &out, const Schema_2x3::IfcCartesianTransformationOperator &op);
+bool IsTrue(const Assimp::STEP::EXPRESS::BOOLEAN &in);
+IfcFloat ConvertSIPrefix(const std::string &prefix);
 
 // IFCProfile.cpp
-bool ProcessProfile(const Schema_2x3::IfcProfileDef& prof, TempMesh& meshout, ConversionData& conv);
-bool ProcessCurve(const Schema_2x3::IfcCurve& curve,  TempMesh& meshout, ConversionData& conv);
+bool ProcessProfile(const Schema_2x3::IfcProfileDef &prof, TempMesh &meshout, ConversionData &conv);
+bool ProcessCurve(const Schema_2x3::IfcCurve &curve, TempMesh &meshout, ConversionData &conv);
 
 // IFCMaterial.cpp
-unsigned int ProcessMaterials(uint64_t id, unsigned int prevMatId, ConversionData& conv, bool forceDefaultMat);
+unsigned int ProcessMaterials(uint64_t id, unsigned int prevMatId, ConversionData &conv, bool forceDefaultMat);
 
 // IFCGeometry.cpp
-IfcMatrix3 DerivePlaneCoordinateSpace(const TempMesh& curmesh, bool& ok, IfcVector3& norOut);
-bool ProcessRepresentationItem(const Schema_2x3::IfcRepresentationItem& item, unsigned int matid, std::set<unsigned int>& mesh_indices, ConversionData& conv);
-void AssignAddedMeshes(std::set<unsigned int>& mesh_indices,aiNode* nd,ConversionData& /*conv*/);
+IfcMatrix3 DerivePlaneCoordinateSpace(const TempMesh &curmesh, bool &ok, IfcVector3 &norOut);
+bool ProcessRepresentationItem(const Schema_2x3::IfcRepresentationItem &item, unsigned int matid, std::set<unsigned int> &mesh_indices, ConversionData &conv);
+void AssignAddedMeshes(std::set<unsigned int> &mesh_indices, aiNode *nd, ConversionData & /*conv*/);
 
-void ProcessSweptAreaSolid(const Schema_2x3::IfcSweptAreaSolid& swept, TempMesh& meshout,
-                           ConversionData& conv);
+void ProcessSweptAreaSolid(const Schema_2x3::IfcSweptAreaSolid &swept, TempMesh &meshout,
+        ConversionData &conv);
 
-void ProcessExtrudedAreaSolid(const Schema_2x3::IfcExtrudedAreaSolid& solid, TempMesh& result,
-                              ConversionData& conv, bool collect_openings);
+void ProcessExtrudedAreaSolid(const Schema_2x3::IfcExtrudedAreaSolid &solid, TempMesh &result,
+        ConversionData &conv, bool collect_openings);
 
 // IFCBoolean.cpp
 
-void ProcessBoolean(const Schema_2x3::IfcBooleanResult& boolean, TempMesh& result, ConversionData& conv);
-void ProcessBooleanHalfSpaceDifference(const Schema_2x3::IfcHalfSpaceSolid* hs, TempMesh& result,
-                                       const TempMesh& first_operand,
-                                       ConversionData& conv);
+void ProcessBoolean(const Schema_2x3::IfcBooleanResult &boolean, TempMesh &result, ConversionData &conv);
+void ProcessBooleanHalfSpaceDifference(const Schema_2x3::IfcHalfSpaceSolid *hs, TempMesh &result,
+        const TempMesh &first_operand,
+        ConversionData &conv);
 
-void ProcessPolygonalBoundedBooleanHalfSpaceDifference(const Schema_2x3::IfcPolygonalBoundedHalfSpace* hs, TempMesh& result,
-                                                       const TempMesh& first_operand,
-                                                       ConversionData& conv);
-void ProcessBooleanExtrudedAreaSolidDifference(const Schema_2x3::IfcExtrudedAreaSolid* as, TempMesh& result,
-                                               const TempMesh& first_operand,
-                                               ConversionData& conv);
-
+void ProcessPolygonalBoundedBooleanHalfSpaceDifference(const Schema_2x3::IfcPolygonalBoundedHalfSpace *hs, TempMesh &result,
+        const TempMesh &first_operand,
+        ConversionData &conv);
+void ProcessBooleanExtrudedAreaSolidDifference(const Schema_2x3::IfcExtrudedAreaSolid *as, TempMesh &result,
+        const TempMesh &first_operand,
+        ConversionData &conv);
 
 // IFCOpenings.cpp
 
-bool GenerateOpenings(std::vector<TempOpening>& openings,
-                      const std::vector<IfcVector3>& nors,
-                      TempMesh& curmesh,
-                      bool check_intersection,
-                      bool generate_connection_geometry,
-                      const IfcVector3& wall_extrusion_axis = IfcVector3(0,1,0));
-
-
+bool GenerateOpenings(std::vector<TempOpening> &openings,
+        const std::vector<IfcVector3> &nors,
+        TempMesh &curmesh,
+        bool check_intersection,
+        bool generate_connection_geometry,
+        const IfcVector3 &wall_extrusion_axis = IfcVector3(0, 1, 0));
 
 // IFCCurve.cpp
 
@@ -324,8 +318,8 @@ bool GenerateOpenings(std::vector<TempOpening>& openings,
 // ------------------------------------------------------------------------------------------------
 class CurveError {
 public:
-    CurveError(const std::string& s)
-    : mStr(s) {
+    CurveError(const std::string &s) :
+            mStr(s) {
         // empty
     }
 
@@ -338,17 +332,16 @@ public:
 // ------------------------------------------------------------------------------------------------
 class Curve {
 protected:
-    Curve(const Schema_2x3::IfcCurve& base_entity, ConversionData& conv)
-    : base_entity(base_entity)
-    , conv(conv) {
+    Curve(const Schema_2x3::IfcCurve &base_entity, ConversionData &conv) :
+            base_entity(base_entity),
+            conv(conv) {
         // empty
     }
 
 public:
-    typedef std::pair<IfcFloat, IfcFloat> ParamRange;
+    using ParamRange = std::pair<IfcFloat, IfcFloat>;
 
     virtual ~Curve() {}
-
 
     // check if a curve is closed
     virtual bool IsClosed() const = 0;
@@ -359,31 +352,30 @@ public:
     // try to match a point on the curve to a given parameter
     // for self-intersecting curves, the result is not ambiguous and
     // it is undefined which parameter is returned.
-    virtual bool ReverseEval(const IfcVector3& val, IfcFloat& paramOut) const;
+    virtual bool ReverseEval(const IfcVector3 &val, IfcFloat &paramOut) const;
 
     // get the range of the curve (both inclusive).
     // +inf and -inf are valid return values, the curve is not bounded in such a case.
-    virtual std::pair<IfcFloat,IfcFloat> GetParametricRange() const = 0;
+    virtual std::pair<IfcFloat, IfcFloat> GetParametricRange() const = 0;
     IfcFloat GetParametricRangeDelta() const;
 
     // estimate the number of sample points that this curve will require
-    virtual size_t EstimateSampleCount(IfcFloat start,IfcFloat end) const;
+    virtual size_t EstimateSampleCount(IfcFloat start, IfcFloat end) const;
 
     // intelligently sample the curve based on the current settings
     // and append the result to the mesh
-    virtual void SampleDiscrete(TempMesh& out,IfcFloat start,IfcFloat end) const;
+    virtual void SampleDiscrete(TempMesh &out, IfcFloat start, IfcFloat end) const;
 
 #ifdef ASSIMP_BUILD_DEBUG
     // check if a particular parameter value lies within the well-defined range
     bool InRange(IfcFloat) const;
 #endif
-    static Curve* Convert(const IFC::Schema_2x3::IfcCurve&,ConversionData& conv);
+    static Curve *Convert(const IFC::Schema_2x3::IfcCurve &, ConversionData &conv);
 
 protected:
-    const Schema_2x3::IfcCurve& base_entity;
-    ConversionData& conv;
+    const Schema_2x3::IfcCurve &base_entity;
+    ConversionData &conv;
 };
-
 
 // --------------------------------------------------------------------------------
 // A BoundedCurve always holds the invariant that GetParametricRange()
@@ -391,24 +383,22 @@ protected:
 // --------------------------------------------------------------------------------
 class BoundedCurve : public Curve {
 public:
-    BoundedCurve(const Schema_2x3::IfcBoundedCurve& entity, ConversionData& conv)
-        : Curve(entity,conv)
-    {}
+    BoundedCurve(const Schema_2x3::IfcBoundedCurve &entity, ConversionData &conv) :
+            Curve(entity, conv) {}
 
 public:
-
-    bool IsClosed() const;
+    bool IsClosed() const override;
 
 public:
-
     // sample the entire curve
-    void SampleDiscrete(TempMesh& out) const;
+    void SampleDiscrete(TempMesh &out) const;
     using Curve::SampleDiscrete;
 };
 
 // IfcProfile.cpp
-bool ProcessCurve(const Schema_2x3::IfcCurve& curve,  TempMesh& meshout, ConversionData& conv);
-}
-}
+bool ProcessCurve(const Schema_2x3::IfcCurve &curve, TempMesh &meshout, ConversionData &conv);
+
+} // namespace IFC
+} // namespace Assimp
 
 #endif

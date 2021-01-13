@@ -1,5 +1,8 @@
 find_package( Doxygen REQUIRED )
 
+set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR})
+set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/docs/sphinx)
+
 set( HTML_OUTPUT "AssimpDoc_Html" CACHE STRING "Output directory for generated HTML documentation. Defaults to AssimpDoc_Html." )
 
 # Enable Microsoft CHM help style only on Windows

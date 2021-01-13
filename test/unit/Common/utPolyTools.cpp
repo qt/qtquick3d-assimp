@@ -65,3 +65,28 @@ TEST_F( utPolyTools, NewellNormalTest ) {
     z[0] = z[1] = z[2] = z[3] = 0;
     NewellNormal<3, 3, 3>(out, 4, x, y, z, Capa);
 }
+
+TEST_F(utPolyTools, DerivePlaneCoordinateSpaceTest) {
+    const aiVector3D vertices_ok[3] = {
+        aiVector3D(-1, -1, 0),
+        aiVector3D(0, 1, 0),
+        aiVector3D(1, -1, 0)
+        
+    };
+    aiVector3D normal;
+    bool ok = true;
+    aiMatrix4x4 m_ok = DerivePlaneCoordinateSpace<ai_real>(vertices_ok, 3, ok, normal);
+    EXPECT_TRUE(ok);
+    EXPECT_FLOAT_EQ(normal.x, 0.0f);
+    EXPECT_FLOAT_EQ(normal.y, 0.0f);
+    EXPECT_FLOAT_EQ(normal.z, 1.0f);
+
+    const aiVector3D vertices_not_ok[3] = {
+        aiVector3D(-1, -1, 0),
+        aiVector3D(-1, -1, 0),
+        aiVector3D(-1, -1, 0)
+
+    };
+    aiMatrix4x4 m_not_ok = DerivePlaneCoordinateSpace<ai_real>(vertices_not_ok, 3, ok, normal);
+    EXPECT_FALSE(ok);
+}

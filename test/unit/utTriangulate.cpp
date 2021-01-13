@@ -49,8 +49,8 @@ using namespace Assimp;
 
 class TriangulateProcessTest : public ::testing::Test {
 public:
-    virtual void SetUp();
-    virtual void TearDown();
+    void SetUp() override;
+    void TearDown() override;
 
 protected:
     aiMesh *pcMesh;
@@ -132,6 +132,6 @@ TEST_F(TriangulateProcessTest, testTriangulation) {
         }
     }
 
-    // we should have no valid normal vectors now necause we aren't a pure polygon mesh
+    // we should have no valid normal vectors now because we aren't a pure polygon mesh
     EXPECT_TRUE(pcMesh->mNormals == NULL);
 }

@@ -47,34 +47,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *  The triangulation algorithm will handle concave or convex polygons.
  *  Self-intersecting or non-planar polygons are not rejected, but
  *  they're probably not triangulated correctly.
- *
- * DEBUG SWITCHES - do not enable any of them in release builds:
- *
- * AI_BUILD_TRIANGULATE_COLOR_FACE_WINDING
- *   - generates vertex colors to represent the face winding order.
- *     the first vertex of a polygon becomes red, the last blue.
- * AI_BUILD_TRIANGULATE_DEBUG_POLYS
- *   - dump all polygons and their triangulation sequences to
- *     a file
  */
+
 #ifndef ASSIMP_BUILD_NO_TRIANGULATE_PROCESS
 
 #include "PostProcessing/TriangulateProcess.h"
 #include "Common/PolyTools.h"
 #include "PostProcessing/ProcessHelper.h"
 
+#include "contrib/poly2tri/poly2tri/poly2tri.h"
+
 #include <cstdint>
 #include <memory>
 
-//#define AI_BUILD_TRIANGULATE_COLOR_FACE_WINDING
-#define AI_BUILD_TRIANGULATE_DEBUG_POLYS
-
-#define POLY_GRID_Y 40
-#define POLY_GRID_X 70
-#define POLY_GRID_XPAD 20
-#define POLY_OUTPUT_FILE "assimp_polygons_debug.txt"
-
-using namespace Assimp;
+namespace Assimp {
 
 // ------------------------------------------------------------------------------------------------
 // Constructor to be privately used by Importer
@@ -128,6 +114,7 @@ static bool validateNumIndices(aiMesh *mesh) {
     return bNeed;
 }
 
+// ------------------------------------------------------------------------------------------------
 static void calulateNumOutputFaces(aiMesh *mesh, size_t &numOut, size_t &maxOut, bool &getNormals) {
     numOut = maxOut = 0;
     getNormals = true;
@@ -147,15 +134,124 @@ static void calulateNumOutputFaces(aiMesh *mesh, size_t &numOut, size_t &maxOut,
 }
 
 // ------------------------------------------------------------------------------------------------
+static void quad2Triangles(const aiFace &face, const aiVector3D *verts, aiFace *curOut) {
+    // quads can have at maximum one concave vertex. Determine
+    // this vertex (if it exists) and start tri-fanning from
+    // it.
+    unsigned int start_vertex = 0;
+    for (unsigned int i = 0; i < 4; ++i) {
+        const aiVector3D &v0 = verts[face.mIndices[(i + 3) % 4]];
+        const aiVector3D &v1 = verts[face.mIndices[(i + 2) % 4]];
+        const aiVector3D &v2 = verts[face.mIndices[(i + 1) % 4]];
+
+        const aiVector3D &v = verts[face.mIndices[i]];
+
+        aiVector3D left = (v0 - v);
+        aiVector3D diag = (v1 - v);
+        aiVector3D right = (v2 - v);
+
+        left.Normalize();
+        diag.Normalize();
+        right.Normalize();
+
+        const float angle = std::acos(left * diag) + std::acos(right * diag);
+        if (angle > AI_MATH_PI_F) {
+            // this is the concave point
+            start_vertex = i;
+            break;
+        }
+    }
+
+    const unsigned int temp[] = { face.mIndices[0], face.mIndices[1], face.mIndices[2], face.mIndices[3] };
+
+    aiFace &nface = *curOut++;
+    nface.mNumIndices = 3;
+    nface.mIndices = face.mIndices;
+
+    nface.mIndices[0] = temp[start_vertex];
+    nface.mIndices[1] = temp[(start_vertex + 1) % 4];
+    nface.mIndices[2] = temp[(start_vertex + 2) % 4];
+
+    aiFace &sface = *curOut++;
+    sface.mNumIndices = 3;
+    sface.mIndices = new unsigned int[3];
+
+    sface.mIndices[0] = temp[start_vertex];
+    sface.mIndices[1] = temp[(start_vertex + 2) % 4];
+    sface.mIndices[2] = temp[(start_vertex + 3) % 4];
+}
+
+// ------------------------------------------------------------------------------------------------
+bool getContourFromePolyline(aiFace &face, aiMesh *pMesh, std::vector<p2t::Point *> &contour,
+        aiMatrix4x4 &m, aiVector3D &vmin, aiVector3D &vmax, ai_real &zcoord) {
+    aiVector3D normal;
+    bool ok = true;
+    m = DerivePlaneCoordinateSpace<ai_real>(pMesh->mVertices, pMesh->mNumVertices, ok, normal);
+    if (!ok) {
+        false;
+    }
+    for (unsigned int i = 0; i < face.mNumIndices; ++i) {
+        unsigned int index = face.mIndices[i];
+
+        const aiVector3D vv = m * pMesh->mVertices[index];
+        // keep Z offset in the plane coordinate system. Ignoring precision issues
+        // (which  are present, of course), this should be the same value for
+        // all polygon vertices (assuming the polygon is planar).
+
+        // XXX this should be guarded, but we somehow need to pick a suitable
+        // epsilon
+        // if(coord != -1.0f) {
+        //  assert(std::fabs(coord - vv.z) < 1e-3f);
+        // }
+        zcoord += vv.z;
+        vmin = std::min(vv, vmin);
+        vmax = std::max(vv, vmax);
+
+        contour.push_back(new p2t::Point(vv.x, vv.y));
+    }
+
+    zcoord /= pMesh->mNumVertices;
+
+    // Further improve the projection by mapping the entire working set into
+    // [0,1] range. This gives us a consistent data range so all epsilons
+    // used below can be constants.
+    vmax -= vmin;
+    const aiVector2D one_vec(1, 1);
+
+    for (p2t::Point* &vv : contour) {
+        vv->x = (vv->x - vmin.x) / vmax.x;
+        vv->y = (vv->y - vmin.y) / vmax.y;
+
+        // sanity rounding
+        aiVector2D cur_vv((ai_real) vv->x, (ai_real)vv->y);
+        cur_vv = std::max(cur_vv, aiVector2D());
+        cur_vv = std::min(cur_vv, one_vec);
+    }
+
+    aiMatrix4x4 mult;
+    mult.a1 = static_cast<ai_real>(1.0) / vmax.x;
+    mult.b2 = static_cast<ai_real>(1.0) / vmax.y;
+
+    mult.a4 = -vmin.x * mult.a1;
+    mult.b4 = -vmin.y * mult.b2;
+    mult.c4 = -zcoord;
+    m = mult * m;
+
+    return true;
+}
+
+// ------------------------------------------------------------------------------------------------
 // Triangulates the given mesh.
 bool TriangulateProcess::TriangulateMesh(aiMesh *pMesh) {
     // Now we have aiMesh::mPrimitiveTypes, so this is only here for test cases
 
     if (!pMesh->mPrimitiveTypes) {
         if (!validateNumIndices(pMesh)) {
+            ASSIMP_LOG_DEBUG("Error while validating number of indices.");
             return false;
         }
     } else if (!(pMesh->mPrimitiveTypes & aiPrimitiveType_POLYGON)) {
+        ASSIMP_LOG_DEBUG("???!");
         return false;
     }
 
@@ -163,17 +259,9 @@ bool TriangulateProcess::TriangulateMesh(aiMesh *pMesh) {
     size_t numOut = 0, max_out = 0;
     bool getNormals = true;
     calulateNumOutputFaces(pMesh, numOut, max_out, getNormals);
-
-    // Just another check whether aiMesh::mPrimitiveTypes is correct
-    ai_assert(numOut != pMesh->mNumFaces);
-
-    aiVector3D *nor_out = nullptr;
-
-    // if we don't have normals yet, but expect them to be a cheap side
-    // product of triangulation anyway, allocate storage for them.
-    if (!pMesh->mNormals && getNormals) {
-        // XXX need a mechanism to inform the GenVertexNormals process to treat these normals as preprocessed per-face normals
-        //  nor_out = pMesh->mNormals = new aiVector3D[pMesh->mNumVertices];
+    if (numOut == pMesh->mNumFaces) {
+        ASSIMP_LOG_DEBUG("Error while generating contour.");
+        return false;
     }
 
     // the output mesh will contain triangles, but no polys anymore
@@ -186,18 +274,6 @@ bool TriangulateProcess::TriangulateMesh(aiMesh *pMesh) {
     std::vector<aiVector2D> temp_verts(max_out + 2);
 
     // Apply vertex colors to represent the face winding?
-#ifdef AI_BUILD_TRIANGULATE_COLOR_FACE_WINDING
-    if (!pMesh->mColors[0])
-        pMesh->mColors[0] = new aiColor4D[pMesh->mNumVertices];
-    else
-        new (pMesh->mColors[0]) aiColor4D[pMesh->mNumVertices];
-
-    aiColor4D *clr = pMesh->mColors[0];
-#endif
-
-#ifdef AI_BUILD_TRIANGULATE_DEBUG_POLYS
-    FILE *fout = fopen(POLY_OUTPUT_FILE, "a");
-#endif
 
     const aiVector3D *verts = pMesh->mVertices;
 
@@ -206,20 +282,6 @@ bool TriangulateProcess::TriangulateMesh(aiMesh *pMesh) {
     for (unsigned int a = 0; a < pMesh->mNumFaces; a++) {
         aiFace &face = pMesh->mFaces[a];
 
-        unsigned int *idx = face.mIndices;
-        int num = (int)face.mNumIndices, ear = 0, tmp, prev = num - 1, next = 0, max = num;
-
-        // Apply vertex colors to represent the face winding?
-#ifdef AI_BUILD_TRIANGULATE_COLOR_FACE_WINDING
-        for (unsigned int i = 0; i < face.mNumIndices; ++i) {
-            aiColor4D &c = clr[idx[i]];
-            c.r = (i + 1) / (float)max;
-            c.b = 1.f - c.r;
-        }
-#endif
-
-        aiFace *const last_face = curOut;
-
         // if it's a simple point,line or triangle: just copy it
         if (face.mNumIndices <= 3) {
             aiFace &nface = *curOut++;
@@ -227,278 +289,52 @@ bool TriangulateProcess::TriangulateMesh(aiMesh *pMesh) {
             nface.mIndices = face.mIndices;
 
             face.mIndices = nullptr;
-            continue;
-        }
-        // optimized code for quadrilaterals
-        else if (face.mNumIndices == 4) {
-
-            // quads can have at maximum one concave vertex. Determine
-            // this vertex (if it exists) and start tri-fanning from
-            // it.
-            unsigned int start_vertex = 0;
-            for (unsigned int i = 0; i < 4; ++i) {
-                const aiVector3D &v0 = verts[face.mIndices[(i + 3) % 4]];
-                const aiVector3D &v1 = verts[face.mIndices[(i + 2) % 4]];
-                const aiVector3D &v2 = verts[face.mIndices[(i + 1) % 4]];
-
-                const aiVector3D &v = verts[face.mIndices[i]];
-
-                aiVector3D left = (v0 - v);
-                aiVector3D diag = (v1 - v);
-                aiVector3D right = (v2 - v);
-
-                left.Normalize();
-                diag.Normalize();
-                right.Normalize();
-
-                const float angle = std::acos(left * diag) + std::acos(right * diag);
-                if (angle > AI_MATH_PI_F) {
-                    // this is the concave point
-                    start_vertex = i;
-                    break;
-                }
-            }
-
-            const unsigned int temp[] = { face.mIndices[0], face.mIndices[1], face.mIndices[2], face.mIndices[3] };
-
-            aiFace &nface = *curOut++;
-            nface.mNumIndices = 3;
-            nface.mIndices = face.mIndices;
-
-            nface.mIndices[0] = temp[start_vertex];
-            nface.mIndices[1] = temp[(start_vertex + 1) % 4];
-            nface.mIndices[2] = temp[(start_vertex + 2) % 4];
-
-            aiFace &sface = *curOut++;
-            sface.mNumIndices = 3;
-            sface.mIndices = new unsigned int[3];
-
-            sface.mIndices[0] = temp[start_vertex];
-            sface.mIndices[1] = temp[(start_vertex + 2) % 4];
-            sface.mIndices[2] = temp[(start_vertex + 3) % 4];
-
-            // prevent double deletion of the indices field
+        } else if (face.mNumIndices == 4) {
+            // optimized code for quadrilaterals
+            quad2Triangles(face, verts, curOut);
             face.mIndices = nullptr;
-            continue;
         } else {
-            // A polygon with more than 3 vertices can be either concave or convex.
-            // Usually everything we're getting is convex and we could easily
-            // triangulate by tri-fanning. However, LightWave is probably the only
-            // modeling suite to make extensive use of highly concave, monster polygons ...
-            // so we need to apply the full 'ear cutting' algorithm to get it right.
-
-            // RERQUIREMENT: polygon is expected to be simple and *nearly* planar.
-            // We project it onto a plane to get a 2d triangle.
-
-            // Collect all vertices of of the polygon.
-            for (tmp = 0; tmp < max; ++tmp) {
-                temp_verts3d[tmp] = verts[idx[tmp]];
+            std::vector<p2t::Point *> contour;
+            aiMatrix4x4 m;
+            aiVector3D vmin, vmax;
+            ai_real zcoord = -1;
+            if (!getContourFromePolyline(face, pMesh, contour, m, vmin, vmax, zcoord)) {
+                ASSIMP_LOG_DEBUG("Error while generating contour.");
+                continue;
             }
-
-            // Get Newell-Normal of the polygon. Store it for future use if it's a polygon-only mesh
-            aiVector3D n;
-            NewellNormal<3, 3, 3>(n, max, &temp_verts3d.front().x, &temp_verts3d.front().y, &temp_verts3d.front().z, Capa);
-            if (nor_out) {
-                for (tmp = 0; tmp < max; ++tmp)
-                    nor_out[idx[tmp]] = n;
-            }
-
-            // Select largest normal coordinate to ignore for projection
-            const float ax = (n.x > 0 ? n.x : -n.x);
-            const float ay = (n.y > 0 ? n.y : -n.y);
-            const float az = (n.z > 0 ? n.z : -n.z);
-
-            unsigned int ac = 0, bc = 1; // no z coord. projection to xy
-            float inv = n.z;
-            if (ax > ay) {
-                if (ax > az) { // no x coord. projection to yz
-                    ac = 1;
-                    bc = 2;
-                    inv = n.x;
+            p2t::CDT cdt(contour);
+            cdt.Triangulate();
+            const std::vector<p2t::Triangle *> tris = cdt.GetTriangles();
+            const aiMatrix4x4 matInv = m.Inverse();
+            for (p2t::Triangle *tri : tris) {
+                curOut->mNumIndices = 3;
+                curOut->mIndices = new unsigned int[curOut->mNumIndices];
+                for (int i = 0; i < 3; ++i) {
+                    const aiVector2D v = aiVector2D(static_cast<ai_real>(tri->GetPoint(i)->x), static_cast<ai_real>(tri->GetPoint(i)->y));
+//                    ai_assert(v.x <= 1.0 && v.x >= 0.0 && v.y <= 1.0 && v.y >= 0.0);
+                    const aiVector3D v3 = matInv * aiVector3D(vmin.x + v.x * vmax.x, vmin.y + v.y * vmax.y, zcoord);
+                    temp_verts3d.emplace_back(v3);
+                    curOut->mIndices[i] = (unsigned int) temp_verts3d.size()-1;
                 }
-            } else if (ay > az) { // no y coord. projection to zy
-                ac = 2;
-                bc = 0;
-                inv = n.y;
+                curOut++;
             }
-
-            // Swap projection axes to take the negated projection vector into account
-            if (inv < 0.f) {
-                std::swap(ac, bc);
-            }
-
-            for (tmp = 0; tmp < max; ++tmp) {
-                temp_verts[tmp].x = verts[idx[tmp]][ac];
-                temp_verts[tmp].y = verts[idx[tmp]][bc];
-                done[tmp] = false;
-            }
-
-#ifdef AI_BUILD_TRIANGULATE_DEBUG_POLYS
-            // plot the plane onto which we mapped the polygon to a 2D ASCII pic
-            aiVector2D bmin, bmax;
-            ArrayBounds(&temp_verts[0], max, bmin, bmax);
-
-            char grid[POLY_GRID_Y][POLY_GRID_X + POLY_GRID_XPAD];
-            std::fill_n((char *)grid, POLY_GRID_Y * (POLY_GRID_X + POLY_GRID_XPAD), ' ');
-
-            for (int i = 0; i < max; ++i) {
-                const aiVector2D &v = (temp_verts[i] - bmin) / (bmax - bmin);
-                const size_t x = static_cast<size_t>(v.x * (POLY_GRID_X - 1)), y = static_cast<size_t>(v.y * (POLY_GRID_Y - 1));
-                char *loc = grid[y] + x;
-                if (grid[y][x] != ' ') {
-                    for (; *loc != ' '; ++loc)
-                        ;
-                    *loc++ = '_';
-                }
-                *(loc + ::ai_snprintf(loc, POLY_GRID_XPAD, "%i", i)) = ' ';
-            }
-
-            for (size_t y = 0; y < POLY_GRID_Y; ++y) {
-                grid[y][POLY_GRID_X + POLY_GRID_XPAD - 1] = '\0';
-                fprintf(fout, "%s\n", grid[y]);
-            }
-
-            fprintf(fout, "\ntriangulation sequence: ");
-#endif
-
-            //
-            // FIXME: currently this is the slow O(kn) variant with a worst case
-            // complexity of O(n^2) (I think). Can be done in O(n).
-            while (num > 3) {
-
-                // Find the next ear of the polygon
-                int num_found = 0;
-                for (ear = next;; prev = ear, ear = next) {
-
-                    // break after we looped two times without a positive match
-                    for (next = ear + 1; done[(next >= max ? next = 0 : next)]; ++next)
-                        ;
-                    if (next < ear) {
-                        if (++num_found == 2) {
-                            break;
-                        }
-                    }
-                    const aiVector2D *pnt1 = &temp_verts[ear],
-                                     *pnt0 = &temp_verts[prev],
-                                     *pnt2 = &temp_verts[next];
-
-                    // Must be a convex point. Assuming ccw winding, it must be on the right of the line between p-1 and p+1.
-                    if (OnLeftSideOfLine2D(*pnt0, *pnt2, *pnt1)) {
-                        continue;
-                    }
-
-                    // and no other point may be contained in this triangle
-                    for (tmp = 0; tmp < max; ++tmp) {
-
-                        // We need to compare the actual values because it's possible that multiple indexes in
-                        // the polygon are referring to the same position. concave_polygon.obj is a sample
-                        //
-                        // FIXME: Use 'epsiloned' comparisons instead? Due to numeric inaccuracies in
-                        // PointInTriangle() I'm guessing that it's actually possible to construct
-                        // input data that would cause us to end up with no ears. The problem is,
-                        // which epsilon? If we chose a too large value, we'd get wrong results
-                        const aiVector2D &vtmp = temp_verts[tmp];
-                        if (vtmp != *pnt1 && vtmp != *pnt2 && vtmp != *pnt0 && PointInTriangle2D(*pnt0, *pnt1, *pnt2, vtmp)) {
-                            break;
-                        }
-                    }
-                    if (tmp != max) {
-                        continue;
-                    }
-
-                    // this vertex is an ear
-                    break;
-                }
-                if (num_found == 2) {
-
-                    // Due to the 'two ear theorem', every simple polygon with more than three points must
-                    // have 2 'ears'. Here's definitely something wrong ... but we don't give up yet.
-                    //
-
-                    // Instead we're continuing with the standard tri-fanning algorithm which we'd
-                    // use if we had only convex polygons. That's life.
-                    ASSIMP_LOG_ERROR("Failed to triangulate polygon (no ear found). Probably not a simple polygon?");
-
-#ifdef AI_BUILD_TRIANGULATE_DEBUG_POLYS
-                    fprintf(fout, "critical error here, no ear found! ");
-#endif
-                    num = 0;
-                    break;
-                }
-
-                aiFace &nface = *curOut++;
-                nface.mNumIndices = 3;
-
-                if (!nface.mIndices) {
-                    nface.mIndices = new unsigned int[3];
-                }
-
-                // setup indices for the new triangle ...
-                nface.mIndices[0] = prev;
-                nface.mIndices[1] = ear;
-                nface.mIndices[2] = next;
-
-                // exclude the ear from most further processing
-                done[ear] = true;
-                --num;
-            }
-            if (num > 0) {
-                // We have three indices forming the last 'ear' remaining. Collect them.
-                aiFace &nface = *curOut++;
-                nface.mNumIndices = 3;
-                if (!nface.mIndices) {
-                    nface.mIndices = new unsigned int[3];
-                }
-
-                for (tmp = 0; done[tmp]; ++tmp)
-                    ;
-                nface.mIndices[0] = tmp;
-
-                for (++tmp; done[tmp]; ++tmp)
-                    ;
-                nface.mIndices[1] = tmp;
-
-                for (++tmp; done[tmp]; ++tmp)
-                    ;
-                nface.mIndices[2] = tmp;
-            }
+            face.mIndices = nullptr;
         }
-
-#ifdef AI_BUILD_TRIANGULATE_DEBUG_POLYS
-
-        for (aiFace *f = last_face; f != curOut; ++f) {
-            unsigned int *i = f->mIndices;
-            fprintf(fout, " (%i %i %i)", i[0], i[1], i[2]);
-        }
-
-        fprintf(fout, "\n*********************************************************************\n");
-        fflush(fout);
-
-#endif
-
-        for (aiFace *f = last_face; f != curOut;) {
-            unsigned int *i = f->mIndices;
-            i[0] = idx[i[0]];
-            i[1] = idx[i[1]];
-            i[2] = idx[i[2]];
-            ++f;
-        }
-
-        delete[] face.mIndices;
-        face.mIndices = nullptr;
     }
 
-#ifdef AI_BUILD_TRIANGULATE_DEBUG_POLYS
-    fclose(fout);
-#endif
-
-    // kill the old faces
     delete[] pMesh->mFaces;
-
-    // ... and store the new ones
     pMesh->mFaces = out;
+    pMesh->mNumVertices = (unsigned int)temp_verts3d.size();
+    delete[] pMesh->mVertices;
+    pMesh->mVertices = new aiVector3D[pMesh->mNumVertices];
+    for (size_t i = 0; i < temp_verts3d.size(); ++i) {
+        pMesh->mVertices[i] = temp_verts3d[i];
+    }
     pMesh->mNumFaces = (unsigned int)(curOut - out); /* not necessarily equal to numOut */
+
     return true;
 }
+
+} // namespace Assimp
 
 #endif // !! ASSIMP_BUILD_NO_TRIANGULATE_PROCESS

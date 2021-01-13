@@ -119,7 +119,7 @@ public:
     /** @brief Normalize the vector with extra check for zero vectors */
     aiVector3t& NormalizeSafe();
 
-    /** @brief Componentwise multiplication of two vectors
+    /** @brief Component-wise multiplication of two vectors
      *
      *  Note that vec*vec yields the dot product.
      *  @param o Second factor */
@@ -129,7 +129,7 @@ public:
 };
 
 
-typedef aiVector3t<ai_real> aiVector3D;
+using aiVector3D = aiVector3t<ai_real>;
 
 #else
 
