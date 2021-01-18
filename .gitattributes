@@ -19,4 +19,5 @@ Readme.md text eol=lf
 /.travis*	export-ignore
 /.coveralls*	export-ignore
 appveyor.yml	export-ignore
+test/models-nonbsd export-ignore
 
