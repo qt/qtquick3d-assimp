@@ -45,6 +45,7 @@ Take a look into the https://github.com/assimp/assimp/blob/master/Build.md file.
 * [Unity 3d Plugin](https://www.assetstore.unity3d.com/en/#!/content/91777)
 * [JVM](https://github.com/kotlin-graphics/assimp) Full jvm port (current [status](https://github.com/kotlin-graphics/assimp/wiki/Status))
 * [HAXE-Port](https://github.com/longde123/assimp-haxe) The Assimp-HAXE-port.
+* [Rust](https://github.com/jkvargas/russimp)
 
 ### Other tools ###
 [open3mod](https://github.com/acgessler/open3mod) is a powerful 3D model viewer based on Assimp's import and export abilities.
@@ -105,12 +106,6 @@ Become a financial contributor and help us sustain our community. [[Contribute](
 Monthly donations via Patreon:
 <br>[![Patreon](https://cloud.githubusercontent.com/assets/8225057/5990484/70413560-a9ab-11e4-8942-1a63607c0b00.png)](http://www.patreon.com/assimp)
 
-<br>
-
-One-off donations via PayPal:
-<br>[![PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=4JRJVPXC4QJM4)
-
-<br>
 
 #### Organizations
 
