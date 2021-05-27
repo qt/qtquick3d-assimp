@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
+Copyright (c) 2006-2021, assimp team
 
 
 All rights reserved.
@@ -93,7 +93,7 @@ void EmbedTexturesProcess::Execute(aiScene* pScene) {
         }
     }
 
-    ASSIMP_LOG_INFO_F("EmbedTexturesProcess finished. Embedded ", embeddedTexturesCount, " textures." );
+    ASSIMP_LOG_INFO("EmbedTexturesProcess finished. Embedded ", embeddedTexturesCount, " textures." );
 }
 
 bool EmbedTexturesProcess::addTexture(aiScene* pScene, std::string path) const {
@@ -103,7 +103,7 @@ bool EmbedTexturesProcess::addTexture(aiScene* pScene, std::string path) const {
     // Test path directly
     std::ifstream file(imagePath, std::ios::binary | std::ios::ate);
     if ((imageSize = file.tellg()) == std::streampos(-1)) {
-        ASSIMP_LOG_WARN_F("EmbedTexturesProcess: Cannot find image: ", imagePath, ". Will try to find it in root folder.");
+        ASSIMP_LOG_WARN("EmbedTexturesProcess: Cannot find image: ", imagePath, ". Will try to find it in root folder.");
 
         // Test path in root path
         imagePath = mRootPath + path;
@@ -113,7 +113,7 @@ bool EmbedTexturesProcess::addTexture(aiScene* pScene, std::string path) const {
             imagePath = mRootPath + path.substr(path.find_last_of("\\/") + 1u);
             file.open(imagePath, std::ios::binary | std::ios::ate);
             if ((imageSize = file.tellg()) == std::streampos(-1)) {
-                ASSIMP_LOG_ERROR_F("EmbedTexturesProcess: Unable to embed texture: ", path, ".");
+                ASSIMP_LOG_ERROR("EmbedTexturesProcess: Unable to embed texture: ", path, ".");
                 return false;
             }
         }
@@ -128,7 +128,8 @@ bool EmbedTexturesProcess::addTexture(aiScene* pScene, std::string path) const {
     auto oldTextures = pScene->mTextures;
     pScene->mTextures = new aiTexture*[pScene->mNumTextures];
     ::memmove(pScene->mTextures, oldTextures, sizeof(aiTexture*) * (pScene->mNumTextures - 1u));
-
+    delete [] oldTextures;
+    
     // Add the new texture
     auto pTexture = new aiTexture;
     pTexture->mHeight = 0; // Means that this is still compressed
@@ -136,7 +137,7 @@ bool EmbedTexturesProcess::addTexture(aiScene* pScene, std::string path) const {
     pTexture->pcData = imageContent;
 
     auto extension = path.substr(path.find_last_of('.') + 1u);
-    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+    extension = ai_tolower(extension);
     if (extension == "jpeg") {
         extension = "jpg";
     }

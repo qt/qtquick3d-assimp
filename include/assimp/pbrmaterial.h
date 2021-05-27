@@ -3,9 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
-
-
+Copyright (c) 2006-2021, assimp team
 
 All rights reserved.
 
@@ -44,8 +42,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /** @file pbrmaterial.h
  *  @brief Defines the material system of the library
  */
+#pragma once
 #ifndef AI_PBRMATERIAL_H_INC
 #define AI_PBRMATERIAL_H_INC
+
+#ifdef __GNUC__
+#   pragma GCC system_header
+#endif
 
 #define AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_FACTOR "$mat.gltf.pbrMetallicRoughness.baseColorFactor", 0, 0
 #define AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR "$mat.gltf.pbrMetallicRoughness.metallicFactor", 0, 0
@@ -57,6 +60,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define AI_MATKEY_GLTF_PBRSPECULARGLOSSINESS "$mat.gltf.pbrSpecularGlossiness", 0, 0
 #define AI_MATKEY_GLTF_PBRSPECULARGLOSSINESS_GLOSSINESS_FACTOR "$mat.gltf.pbrMetallicRoughness.glossinessFactor", 0, 0
 #define AI_MATKEY_GLTF_UNLIT "$mat.gltf.unlit", 0, 0
+#define AI_MATKEY_GLTF_MATERIAL_SHEEN "$mat.gltf.materialSheen", 0, 0
+#define AI_MATKEY_GLTF_MATERIAL_SHEEN_COLOR_FACTOR "$mat.gltf.materialSheen.sheenColorFactor", 0, 0
+#define AI_MATKEY_GLTF_MATERIAL_SHEEN_ROUGHNESS_FACTOR "$mat.gltf.materialSheen.sheenRoughnessFactor", 0, 0
+#define AI_MATKEY_GLTF_MATERIAL_SHEEN_COLOR_TEXTURE aiTextureType_UNKNOWN, 1
+#define AI_MATKEY_GLTF_MATERIAL_SHEEN_ROUGHNESS_TEXTURE aiTextureType_UNKNOWN, 2
+#define AI_MATKEY_GLTF_MATERIAL_CLEARCOAT "$mat.gltf.materialClearcoat", 0, 0
+#define AI_MATKEY_GLTF_MATERIAL_CLEARCOAT_FACTOR "$mat.gltf.materialClearcoat.clearcoatFactor", 0, 0
+#define AI_MATKEY_GLTF_MATERIAL_CLEARCOAT_ROUGHNESS_FACTOR "$mat.gltf.materialClearcoat.clearcoatRoughnessFactor", 0, 0
+#define AI_MATKEY_GLTF_MATERIAL_CLEARCOAT_TEXTURE aiTextureType_UNKNOWN, 3
+#define AI_MATKEY_GLTF_MATERIAL_CLEARCOAT_ROUGHNESS_TEXTURE aiTextureType_UNKNOWN, 4
+#define AI_MATKEY_GLTF_MATERIAL_CLEARCOAT_NORMAL_TEXTURE aiTextureType_NORMALS, 1
+#define AI_MATKEY_GLTF_MATERIAL_TRANSMISSION "$mat.gltf.materialTransmission", 0, 0
+#define AI_MATKEY_GLTF_MATERIAL_TRANSMISSION_FACTOR "$mat.gltf.materialTransmission.transmissionFactor", 0, 0
+#define AI_MATKEY_GLTF_MATERIAL_TRANSMISSION_TEXTURE aiTextureType_UNKNOWN, 5
 
 #define _AI_MATKEY_GLTF_TEXTURE_TEXCOORD_BASE "$tex.file.texCoord"
 #define _AI_MATKEY_GLTF_MAPPINGNAME_BASE "$tex.mappingname"

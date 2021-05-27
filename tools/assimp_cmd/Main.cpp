@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
+Copyright (c) 2006-2021, assimp team
 
 
 
@@ -85,7 +85,7 @@ int main (int argc, char* argv[])
 {
 	if (argc <= 1)	{
 		printf("assimp: No command specified. Use \'assimp help\' for a detailed command list\n");
-		return 0;
+		return AssimpCmdError::Success;
 	}
 
 	// assimp version
@@ -102,7 +102,7 @@ int main (int argc, char* argv[])
 			(flags & ASSIMP_CFLAGS_STLPORT ?		"-stlport " : ""),
 			aiGetVersionRevision());
 
-		return 0;
+		return AssimpCmdError::Success;
 	}
 
 	// assimp help
@@ -110,7 +110,7 @@ int main (int argc, char* argv[])
 	// because people could try them intuitively)
 	if (!strcmp(argv[1], "help") || !strcmp(argv[1], "--help") || !strcmp(argv[1], "-h")) {
 		printf("%s",AICMD_MSG_HELP);
-		return 0;
+		return AssimpCmdError::Success;
 	}
 
 	// assimp cmpdump
@@ -137,7 +137,7 @@ int main (int argc, char* argv[])
 		imp.GetExtensionList(s);
 
 		printf("%s\n",s.data);
-		return 0;
+		return AssimpCmdError::Success;
 	}
 
 #ifndef ASSIMP_BUILD_NO_EXPORT
@@ -155,7 +155,7 @@ int main (int argc, char* argv[])
 		}
 
 		printf("%s\n",s.data);
-		return 0;
+		return AssimpCmdError::Success;
 	}
 
 
@@ -166,19 +166,19 @@ int main (int argc, char* argv[])
 
 		if (argc<3) {
 			printf("Expected file format id\n");
-			return -11;
+			return AssimpCmdError::NoFileFormatSpecified;
 		}
 
 		for(size_t i = 0, end = exp.GetExportFormatCount(); i < end; ++i) {
 			const aiExportFormatDesc* const e = exp.GetExportFormatDescription(i);
 			if (!strcmp(e->id,argv[2])) {
 				printf("%s\n%s\n%s\n",e->id,e->fileExtension,e->description);
-				return 0;
+				return AssimpCmdError::Success;
 			}
 		}
 		
 		printf("Unknown file format id: \'%s\'\n",argv[2]);
-		return -12;
+		return AssimpCmdError::UnknownFileFormat;
 	}
 
 	// assimp export
@@ -194,11 +194,11 @@ int main (int argc, char* argv[])
 	if (! strcmp(argv[1], "knowext")) {
 		if (argc<3) {
 			printf("Expected file extension");
-			return -10;
+			return AssimpCmdError::NoFileExtensionSpecified;
 		}
 		const bool b = imp.IsExtensionSupported(argv[2]);
 		printf("File extension \'%s\'  is %sknown\n",argv[2],(b?"":"not "));
-		return b?0:-1;
+		return b? AssimpCmdError::Success : AssimpCmdError::UnknownFileExtension;
 	}
 
 	// assimp info
@@ -228,7 +228,7 @@ int main (int argc, char* argv[])
 	}
 
 	printf("Unrecognized command. Use \'assimp help\' for a detailed command list\n");
-	return 1;
+	return AssimpCmdError::UnrecognizedCommand;
 }
 
 
@@ -324,6 +324,14 @@ bool ExportModel(const aiScene* pOut,
 	if (imp.showLog) {
 		PrintHorBar();
 	}
+
+	aiMatrix4x4 rx, ry, rz;
+    aiMatrix4x4::RotationX(imp.rot.x, rx);
+    aiMatrix4x4::RotationY(imp.rot.y, ry);
+    aiMatrix4x4::RotationZ(imp.rot.z, rz);
+	pOut->mRootNode->mTransformation *= rx;
+    pOut->mRootNode->mTransformation *= ry;
+    pOut->mRootNode->mTransformation *= rz;
 
 	// do the actual export, measure time
 	const clock_t first = clock();
@@ -493,6 +501,18 @@ int ProcessStandardArguments(
 		else if (! strcmp( param, "-v") || ! strcmp( param, "--verbose")) {
 			fill.verbose = true;
 		}
+		else if (!strncmp(params[i], "-rx=", 4) || !strncmp(params[i], "--rotation-x=", 13)) {
+            std::string value = std::string(params[i] + (params[i][1] == '-' ? 13 : 4));
+            fill.rot.x = std::stof(value);
+		} 
+		else if (!strncmp(params[i], "-ry=", 4) || !strncmp(params[i], "--rotation-y=", 13)) {
+            std::string value = std::string(params[i] + (params[i][1] == '-' ? 13 : 4));
+            fill.rot.y = std::stof(value);
+        } 
+		else if (!strncmp(params[i], "-rz=", 4) || !strncmp(params[i], "--rotation-z=", 13)) {
+            std::string value = std::string(params[i] + (params[i][1] == '-' ? 13 : 4));
+            fill.rot.z = std::stof(value);
+        }
 		else if (! strncmp( param, "--log-out=",10) || ! strncmp( param, "-lo",3)) {
 			fill.logFile = std::string(params[i]+(params[i][1] == '-' ? 10 : 3));
 			if (!fill.logFile.length()) {
@@ -505,7 +525,7 @@ int ProcessStandardArguments(
 		fill.log = true;
 	}
 
-	return 0;
+	return AssimpCmdError::Success;
 }
 
 // ------------------------------------------------------------------------------
@@ -517,5 +537,5 @@ int Assimp_TestBatchLoad (
 		globalImporter->ReadFile(params[i],aiProcessPreset_TargetRealtime_MaxQuality);
 		// we're totally silent. scene destructs automatically.
 	}
-	return 0;
+	return AssimpCmdError::Success;
 }

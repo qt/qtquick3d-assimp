@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2008, assimp team
+Copyright (c) 2006-2020, assimp team
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,
@@ -76,7 +76,7 @@ public:
         if (std::string::npos != (ss2 = mBase.find_last_of("\\/")))  {
             mBase.erase(ss2,mBase.length()-ss2);
         } else {
-            mBase = "";
+            mBase = std::string();
         }
 
         // make sure the directory is terminated properly
@@ -89,7 +89,7 @@ public:
             mBase += getOsSeparator();
         }
 
-        DefaultLogger::get()->info("Import root directory is \'" + mBase + "\'");
+        DefaultLogger::get()->info("Import root directory is \'", mBase, "\'");
     }
 
     /** Destructor. */
