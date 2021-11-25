@@ -5,8 +5,6 @@ Open Asset Import Library (assimp)
 
 Copyright (c) 2006-2021, assimp team
 
-
-
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,
@@ -132,8 +130,8 @@ bool DXFImporter::CanRead( const std::string& filename, IOSystem* pIOHandler, bo
     }
 
     if ( extension.empty() || checkSig ) {
-        const char *pTokens[] = { "SECTION", "HEADER", "ENDSEC", "BLOCKS" };
-        return BaseImporter::SearchFileHeaderForToken(pIOHandler, filename, pTokens, 4, 32 );
+        static const char * const pTokens[] = { "SECTION", "HEADER", "ENDSEC", "BLOCKS" };
+        return SearchFileHeaderForToken(pIOHandler, filename, pTokens, 4, 32 );
     }
 
     return false;
@@ -549,7 +547,7 @@ void DXFImporter::ParseEntities(DXF::LineReader& reader, DXF::FileData& output) 
         ++reader;
     }
 
-    ASSIMP_LOG_VERBOSE_DEBUG( "DXF: got ", block.lines.size()," polylines and ", block.insertions.size(), 
+    ASSIMP_LOG_VERBOSE_DEBUG( "DXF: got ", block.lines.size()," polylines and ", block.insertions.size(),
         " inserted blocks in ENTITIES" );
 }
 
