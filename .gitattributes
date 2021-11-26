@@ -15,9 +15,33 @@ LICENSE text eol=lf
 Readme.md text eol=lf
 # make sure that repo-specific settings (.gitignore, CI-setup,...)
 # are excluded from the source-package generated via 'git archive'
-.git*      	export-ignore
-/.travis*	export-ignore
-/.coveralls*	export-ignore
-appveyor.yml	export-ignore
-test/models-nonbsd export-ignore
-
+.git* export-ignore
+/.travis* export-ignore
+/.coveralls* export-ignore
+appveyor.yml export-ignore
+assimp.pc.in export-ignore
+Build.md export-ignore
+BUILDBINARIES_EXAMPLE.bat export-ignore
+CMakeLists.txt export-ignore
+Dockerfile export-ignore
+INSTALL export-ignore
+revision.h.in export-ignore
+contrib/android-cmake export-ignore
+contrib/clipper export-ignore
+contrib/draco export-ignore
+contrib/gtest export-ignore
+contrib/Open3DGC export-ignore
+contrib/openddlparser export-ignore
+contrib/stb export-ignore
+contrib/zip export-ignore
+contrib/zlib export-ignore
+contrib/zlib_note.txt export-ignore
+cmake-modules export-ignore
+doc export-ignore
+fuzz export-ignore
+packaging export-ignore
+port export-ignore
+samples export-ignore
+scripts export-ignore
+test export-ignore
+tools export-ignore
