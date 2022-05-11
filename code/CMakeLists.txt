@@ -1,7 +1,7 @@
 # Open Asset Import Library (assimp)
 # ----------------------------------------------------------------------
 #
-# Copyright (c) 2006-2021, assimp team
+# Copyright (c) 2006-2022, assimp team
 #
 # All rights reserved.
 #
@@ -78,6 +78,7 @@ SET( PUBLIC_HEADERS
   ${HEADER_PATH}/matrix4x4.h
   ${HEADER_PATH}/matrix4x4.inl
   ${HEADER_PATH}/mesh.h
+  ${HEADER_PATH}/ObjMaterial.h
   ${HEADER_PATH}/pbrmaterial.h
   ${HEADER_PATH}/GltfMaterial.h
   ${HEADER_PATH}/postprocess.h
@@ -142,6 +143,7 @@ SET( PUBLIC_HEADERS
   ${HEADER_PATH}/MathFunctions.h
   ${HEADER_PATH}/Exceptional.h
   ${HEADER_PATH}/ByteSwapper.h
+  ${HEADER_PATH}/Base64.hpp
 )
 
 SET( Core_SRCS
@@ -165,6 +167,8 @@ SET( Logging_SRCS
 SOURCE_GROUP(Logging FILES ${Logging_SRCS})
 
 SET( Common_SRCS
+  Common/Compression.cpp
+  Common/Compression.h
   Common/BaseImporter.cpp
   Common/BaseProcess.cpp
   Common/BaseProcess.h
@@ -174,6 +178,7 @@ SET( Common_SRCS
   Common/ImporterRegistry.cpp
   Common/DefaultProgressHandler.h
   Common/DefaultIOStream.cpp
+  Common/IOSystem.cpp
   Common/DefaultIOSystem.cpp
   Common/ZipArchiveIOSystem.cpp
   Common/PolyTools.h
@@ -201,6 +206,7 @@ SET( Common_SRCS
   Common/material.cpp
   Common/AssertHandler.cpp
   Common/Exceptional.cpp
+  Common/Base64.cpp
 )
 SOURCE_GROUP(Common FILES ${Common_SRCS})
 
@@ -371,6 +377,12 @@ ADD_ASSIMP_IMPORTER( IRRMESH
   AssetLib/Irr/IRRMeshLoader.h
   AssetLib/Irr/IRRShared.cpp
   AssetLib/Irr/IRRShared.h
+)
+
+ADD_ASSIMP_IMPORTER( IQM
+  AssetLib/IQM/IQMImporter.cpp
+  AssetLib/IQM/iqm.h
+  AssetLib/IQM/IQMImporter.h
 )
 
 ADD_ASSIMP_IMPORTER( IRR
@@ -1177,7 +1189,7 @@ TARGET_COMPILE_FEATURES(assimp PRIVATE c_std_99)
 TARGET_INCLUDE_DIRECTORIES ( assimp PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../include>
-  $<INSTALL_INTERFACE:include>
+  $<INSTALL_INTERFACE:${ASSIMP_INCLUDE_INSTALL_DIR}>
 )
 
 IF(ASSIMP_HUNTER_ENABLED)
@@ -1306,12 +1318,11 @@ ENDIF ()
 
 INSTALL( TARGETS assimp
   EXPORT "${TARGETS_EXPORT_NAME}"
-  LIBRARY DESTINATION ${ASSIMP_LIB_INSTALL_DIR}
-  ARCHIVE DESTINATION ${ASSIMP_LIB_INSTALL_DIR}
-  RUNTIME DESTINATION ${ASSIMP_BIN_INSTALL_DIR}
-  FRAMEWORK DESTINATION ${ASSIMP_LIB_INSTALL_DIR}
-  COMPONENT ${LIBASSIMP_COMPONENT}
-  INCLUDES DESTINATION include
+  LIBRARY DESTINATION ${ASSIMP_LIB_INSTALL_DIR} COMPONENT ${LIBASSIMP_COMPONENT}
+  ARCHIVE DESTINATION ${ASSIMP_LIB_INSTALL_DIR} COMPONENT ${LIBASSIMP-DEV_COMPONENT}
+  RUNTIME DESTINATION ${ASSIMP_BIN_INSTALL_DIR} COMPONENT ${LIBASSIMP_COMPONENT}
+  FRAMEWORK DESTINATION ${ASSIMP_LIB_INSTALL_DIR} COMPONENT ${LIBASSIMP_COMPONENT}
+  INCLUDES DESTINATION ${ASSIMP_INCLUDE_INSTALL_DIR}
 )
 INSTALL( FILES ${PUBLIC_HEADERS} DESTINATION ${ASSIMP_INCLUDE_INSTALL_DIR}/assimp COMPONENT assimp-dev)
 INSTALL( FILES ${COMPILER_HEADERS} DESTINATION ${ASSIMP_INCLUDE_INSTALL_DIR}/assimp/Compiler COMPONENT assimp-dev)

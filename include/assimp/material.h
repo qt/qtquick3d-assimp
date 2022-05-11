@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2021, assimp team
+Copyright (c) 2006-2022, assimp team
 
 All rights reserved.
 
@@ -331,7 +331,7 @@ enum aiTextureType {
 #endif
 };
 
-#define AI_TEXTURE_TYPE_MAX aiTextureType_UNKNOWN
+#define AI_TEXTURE_TYPE_MAX aiTextureType_TRANSMISSION
 
 // -------------------------------------------------------------------------------
 // Get a string for a given aiTextureType

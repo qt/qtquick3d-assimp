@@ -1,6 +1,6 @@
 # Open Asset Import Library (assimp)
 # ----------------------------------------------------------------------
-# Copyright (c) 2006-2021, assimp team
+# Copyright (c) 2006-2022, assimp team
 #
 # All rights reserved.
 #
@@ -49,14 +49,14 @@ option(ASSIMP_HUNTER_ENABLED "Enable Hunter package manager support" OFF)
 IF(ASSIMP_HUNTER_ENABLED)
   include("cmake-modules/HunterGate.cmake")
   HunterGate(
-    URL "https://github.com/cpp-pm/hunter/archive/v0.23.311.tar.gz"
-    SHA1 "1a82b9b73055879181cb1466b2ab5d48ee8ae410"
+    URL "https://github.com/cpp-pm/hunter/archive/v0.24.0.tar.gz"
+    SHA1 "a3d7f4372b1dcd52faa6ff4a3bd5358e1d0e5efd"
   )
 
   add_definitions(-DASSIMP_USE_HUNTER)
 ENDIF()
 
-PROJECT(Assimp VERSION 5.1.6)
+PROJECT(Assimp VERSION 5.2.0)
 
 # All supported options ###############################################
 
@@ -134,12 +134,12 @@ OPTION ( ASSIMP_IGNORE_GIT_HASH
    OFF
 )
 
-IF ( WIN32 )
+IF (WIN32)
   # Use subset of Windows.h
   ADD_DEFINITIONS( -DWIN32_LEAN_AND_MEAN )
 
   IF(MSVC)
-    OPTION ( ASSIMP_BUILD_ASSIMP_VIEW
+    OPTION (ASSIMP_BUILD_ASSIMP_VIEW
       "If the Assimp view tool is built. (requires DirectX)"
       OFF )
 
@@ -150,6 +150,27 @@ IF ( WIN32 )
       # Multibyte character set is deprecated since at least MSVC2015 (possibly earlier)
       ADD_DEFINITIONS( -DUNICODE -D_UNICODE )
     ENDIF()
+
+    # Link statically against c/c++ lib to avoid missing redistriburable such as
+    # "VCRUNTIME140.dll not found. Try reinstalling the app.", but give users
+    # a choice to opt for the shared runtime if they want.
+    option(USE_STATIC_CRT "Link against the static runtime libraries." OFF)
+
+    # The CMAKE_CXX_FLAGS vars can be overriden by some Visual Studio generators, so we use an alternative
+    # global method here:
+    if (${USE_STATIC_CRT})
+      add_compile_options(
+          $<$<CONFIG:>:/MT>
+          $<$<CONFIG:Debug>:/MTd>
+          $<$<CONFIG:Release>:/MT>
+      )
+    else()
+      add_compile_options(
+          $<$<CONFIG:>:/MD>
+          $<$<CONFIG:Debug>:/MDd>
+          $<$<CONFIG:Release>:/MD>
+      )
+    endif()
   ENDIF()
 ENDIF()
 
@@ -243,6 +264,13 @@ SET(ASSIMP_LIBRARY_SUFFIX "" CACHE STRING "Suffix to append to library names")
 IF( UNIX )
   # Use GNUInstallDirs for Unix predefined directories
   INCLUDE(GNUInstallDirs)
+  # Ensure that we do not run into issues like http://www.tcm.phy.cam.ac.uk/sw/inodes64.html on 32 bit linux
+  IF( ${OPERATING_SYSTEM} MATCHES "Android")
+  ELSE()
+    IF ( CMAKE_SIZEOF_VOID_P EQUAL 4) # only necessary for 32-bit linux
+      ADD_DEFINITIONS(-D_FILE_OFFSET_BITS=64 )
+    ENDIF()
+  ENDIF()
 ENDIF()
 
 # Grouped compiler settings ########################################
@@ -341,9 +369,24 @@ INCLUDE (FindPkgMacros)
 INCLUDE (PrecompiledHeader)
 
 # Set Assimp project output directory variables.
-SET(ASSIMP_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin" CACHE STRING "Path for runtime output files")
-SET(ASSIMP_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin" CACHE STRING "Path for library output files")
-SET(ASSIMP_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib" CACHE STRING "Path for archive output files")
+# Will respect top-level CMAKE_*_OUTPUT_DIRECTORY variables if any are set.
+IF(NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+  SET(ASSIMP_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin" CACHE STRING "Path for runtime output files")
+ELSE()
+  SET(ASSIMP_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} CACHE STRING "Path for runtime output files")
+ENDIF()
+
+IF(NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+  SET(ASSIMP_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin" CACHE STRING "Path for library output files")
+ELSE()
+  SET(ASSIMP_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} CACHE STRING "Path for runtime output files")
+ENDIF()
+
+IF(NOT DEFINED CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
+  SET(ASSIMP_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib" CACHE STRING "Path for library output files")
+ELSE()
+  SET(ASSIMP_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY} CACHE STRING "Path for runtime output files")
+ENDIF()
 
 # Macro used to set the output directories of a target to the
 # respective Assimp output directories.
@@ -672,11 +715,13 @@ ENDIF()
 ADD_SUBDIRECTORY( code/ )
 IF ( ASSIMP_BUILD_ASSIMP_TOOLS )
   # The viewer for windows only
-  IF ( WIN32 )
+  IF (WIN32)
     OPTION ( ASSIMP_BUILD_ASSIMP_VIEW "If the Assimp view tool is built. (requires DirectX)" OFF )
     IF ( ASSIMP_BUILD_ASSIMP_VIEW )
       ADD_SUBDIRECTORY( tools/assimp_view/ )
     ENDIF ()
+  ELSE()
+    MESSAGE("Building Assimp Viewer only supported on Windows.")
   ENDIF ()
   # The command line tool
   ADD_SUBDIRECTORY( tools/assimp_cmd/ )

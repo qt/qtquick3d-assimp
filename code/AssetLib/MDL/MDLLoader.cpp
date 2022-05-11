@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2021, assimp team
+Copyright (c) 2006-2022, assimp team
 
 All rights reserved.
 
@@ -104,23 +104,18 @@ MDLImporter::~MDLImporter() {
 
 // ------------------------------------------------------------------------------------------------
 // Returns whether the class can handle the format of the given file.
-bool MDLImporter::CanRead(const std::string &pFile, IOSystem *pIOHandler, bool checkSig) const {
-    const std::string extension = GetExtension(pFile);
-
-    // if check for extension is not enough, check for the magic tokens
-    if (extension == "mdl" || !extension.length() || checkSig) {
-        uint32_t tokens[8];
-        tokens[0] = AI_MDL_MAGIC_NUMBER_LE_HL2a;
-        tokens[1] = AI_MDL_MAGIC_NUMBER_LE_HL2b;
-        tokens[2] = AI_MDL_MAGIC_NUMBER_LE_GS7;
-        tokens[3] = AI_MDL_MAGIC_NUMBER_LE_GS5b;
-        tokens[4] = AI_MDL_MAGIC_NUMBER_LE_GS5a;
-        tokens[5] = AI_MDL_MAGIC_NUMBER_LE_GS4;
-        tokens[6] = AI_MDL_MAGIC_NUMBER_LE_GS3;
-        tokens[7] = AI_MDL_MAGIC_NUMBER_LE;
-        return CheckMagicToken(pIOHandler, pFile, tokens, 8, 0);
-    }
-    return false;
+bool MDLImporter::CanRead(const std::string &pFile, IOSystem *pIOHandler, bool /*checkSig*/) const {
+    static const uint32_t tokens[] = {
+        AI_MDL_MAGIC_NUMBER_LE_HL2a,
+        AI_MDL_MAGIC_NUMBER_LE_HL2b,
+        AI_MDL_MAGIC_NUMBER_LE_GS7,
+        AI_MDL_MAGIC_NUMBER_LE_GS5b,
+        AI_MDL_MAGIC_NUMBER_LE_GS5a,
+        AI_MDL_MAGIC_NUMBER_LE_GS4,
+        AI_MDL_MAGIC_NUMBER_LE_GS3,
+        AI_MDL_MAGIC_NUMBER_LE
+    };
+    return CheckMagicToken(pIOHandler, pFile, tokens, AI_COUNT_OF(tokens));
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -862,6 +857,9 @@ void MDLImporter::CalculateUVCoordinates_MDL5() {
             const float fHeight = (float)iHeight;
             aiMesh *pcMesh = this->pScene->mMeshes[0];
             for (unsigned int i = 0; i < pcMesh->mNumVertices; ++i) {
+                if (!pcMesh->HasTextureCoords(0)) {
+                    continue;
+                }
                 pcMesh->mTextureCoords[0][i].x /= fWidth;
                 pcMesh->mTextureCoords[0][i].y /= fHeight;
                 pcMesh->mTextureCoords[0][i].y = 1.0f - pcMesh->mTextureCoords[0][i].y; // DX to OGL

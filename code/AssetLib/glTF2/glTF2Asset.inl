@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2021, assimp team
+Copyright (c) 2006-2022, assimp team
 
 All rights reserved.
 
@@ -44,6 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/MemoryIOWrapper.h>
 #include <assimp/StringUtils.h>
 #include <assimp/DefaultLogger.hpp>
+#include <assimp/Base64.hpp>
 
 // clang-format off
 #ifdef ASSIMP_ENABLE_DRACO
@@ -178,11 +179,11 @@ inline bool GetAttribVector(Mesh::Primitive &p, const char *attr, Mesh::Accessor
         v = &(p.attributes.texcoord);
     } else if ((pos = Compare(attr, "COLOR"))) {
         v = &(p.attributes.color);
-    } else if ((pos = Compare(attr, "JOINT"))) {
+    } else if ((pos = Compare(attr, "JOINTS"))) {
         v = &(p.attributes.joint);
     } else if ((pos = Compare(attr, "JOINTMATRIX"))) {
         v = &(p.attributes.jointmatrix);
-    } else if ((pos = Compare(attr, "WEIGHT"))) {
+    } else if ((pos = Compare(attr, "WEIGHTS"))) {
         v = &(p.attributes.weight);
     } else
         return false;
@@ -563,7 +564,7 @@ inline void Buffer::Read(Value &obj, Asset &r) {
     if (ParseDataURI(uri, it->GetStringLength(), dataURI)) {
         if (dataURI.base64) {
             uint8_t *data = nullptr;
-            this->byteLength = glTFCommon::Util::DecodeBase64(dataURI.data, dataURI.dataLength, data);
+            this->byteLength = Base64::Decode(dataURI.data, dataURI.dataLength, data);
             this->mData.reset(data, std::default_delete<uint8_t[]>());
 
             if (statedLength > 0 && this->byteLength != statedLength) {
@@ -1062,7 +1063,7 @@ inline void Image::Read(Value &obj, Asset &r) {
                 mimeType = dataURI.mediaType;
                 if (dataURI.base64) {
                     uint8_t *ptr = nullptr;
-                    mDataLength = glTFCommon::Util::DecodeBase64(dataURI.data, dataURI.dataLength, ptr);
+                    mDataLength = Base64::Decode(dataURI.data, dataURI.dataLength, ptr);
                     mData.reset(ptr);
                 }
             } else {
