@@ -44,13 +44,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <assimp/ai_assert.h>
 #include <assimp/DefaultLogger.hpp>
+#include <assimp/BaseImporter.h>
 
-#include "BaseImporter.h"
 #include "IOStream.hpp"
 
 #include <pugixml.hpp>
 #include <utility>
 #include <vector>
+#include <cinttypes>
 
 namespace Assimp {
 
@@ -126,6 +127,8 @@ public:
     /// @param[in] stream      The input stream.
     /// @return true, if the parsing was successful, false if not.
     bool parse(IOStream *stream);
+
+    bool parseFromBuffer(std::vector<char> &buffer);
 
     /// @brief  Will return true if a root node is there.
     /// @return true in case of an existing root.
@@ -287,22 +290,34 @@ bool TXmlParser<TNodeType>::hasNode(const std::string &name) {
 
 template <class TNodeType>
 bool TXmlParser<TNodeType>::parse(IOStream *stream) {
-    if (hasRoot()) {
-        clear();
-    }
-
     if (nullptr == stream) {
         ASSIMP_LOG_DEBUG("Stream is nullptr.");
         return false;
     }
 
     const size_t len = stream->FileSize();
+    if (len == 0) {
+        ASSIMP_LOG_DEBUG("The xml file is empty.");
+        return false;
+    }
+
     mData.resize(len + 1);
     memset(&mData[0], '\0', len + 1);
     stream->Read(&mData[0], 1, len);
 
+    return parseFromBuffer(mData);
+}
+
+template <class TNodeType>
+bool TXmlParser<TNodeType>::parseFromBuffer(std::vector<char> &buffer) {
+    if (hasRoot()) {
+        clear();
+    }
+
+    BaseImporter::ConvertToUTF8(mData);
+
     mDoc = new pugi::xml_document();
-    pugi::xml_parse_result parse_result = mDoc->load_string(&mData[0], pugi::parse_full);
+    pugi::xml_parse_result parse_result = mDoc->load_string(&buffer[0], pugi::parse_full);
     if (parse_result.status == pugi::status_ok) {
         return true;
     }

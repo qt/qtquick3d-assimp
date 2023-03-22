@@ -389,9 +389,18 @@ void BaseImporter::ConvertToUTF8(std::vector<char> &data) {
     // UTF 16 LE with BOM
     if (*((uint16_t *)&data.front()) == 0xFEFF) {
         ASSIMP_LOG_DEBUG("Found UTF-16 BOM ...");
-
-        std::vector<unsigned char> output;
-        utf8::utf16to8(data.begin(), data.end(), back_inserter(output));
+        const size_t size = data.size();
+        const uint16_t *sourceStart = (uint16_t *)data.data();
+        const size_t targetSize = size * 3; // enough to encode
+        char *targetStart = new char[targetSize];
+        std::memset(targetStart, 0, targetSize * sizeof(char));
+        utf8::utf16to8(sourceStart, sourceStart + size / 2, targetStart);        
+        std::string result(targetStart);
+        data.clear();
+        for (size_t i = 0; i < result.size(); ++i) {
+            data.push_back(result[i]);
+        }
+        delete[] targetStart;
         return;
     }
 }

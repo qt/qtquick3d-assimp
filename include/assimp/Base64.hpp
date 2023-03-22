@@ -43,7 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_BASE64_HPP_INC
 #define AI_BASE64_HPP_INC
 
-#include <stdint.h>
+#include <cstdint>
 #include <vector>
 #include <string>
 

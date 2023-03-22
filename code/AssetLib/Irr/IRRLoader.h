@@ -65,7 +65,7 @@ namespace Assimp    {
 class IRRImporter : public BaseImporter, public IrrlichtBase {
 public:
     IRRImporter();
-    ~IRRImporter() override;
+    ~IRRImporter() override = default;
 
     // -------------------------------------------------------------------
     /** Returns whether the class can handle the format of the given file.

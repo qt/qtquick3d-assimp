@@ -54,6 +54,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
+
 #include <cstdint>
 #include <set>
 #include <vector>
@@ -62,7 +63,9 @@ namespace Assimp {
 class BlobIOSystem;
 
 // --------------------------------------------------------------------------------------------
-/** Redirect IOStream to a blob */
+/**
+ * @brief Redirect IOStream to a blob
+ */
 // --------------------------------------------------------------------------------------------
 class BlobIOStream : public IOStream {
 public:
@@ -84,7 +87,6 @@ public:
     ///	@brief  The class destructor.
     ~BlobIOStream() override;
 
-public:
     // -------------------------------------------------------------------
     aiExportDataBlob *GetBlob() {
         aiExportDataBlob *blob = new aiExportDataBlob();
@@ -194,15 +196,14 @@ private:
 /** Redirect IOSystem to a blob */
 // --------------------------------------------------------------------------------------------
 class BlobIOSystem : public IOSystem {
-
     friend class BlobIOStream;
     typedef std::pair<std::string, aiExportDataBlob *> BlobEntry;
-
 
 public:
     /// @brief The default class constructor.
     BlobIOSystem() :
             baseName{AI_BLOBIO_MAGIC} {
+        // 
     }
 
     ///	@brief  The class constructor with the base name.
@@ -218,7 +219,6 @@ public:
         }
     }
 
-public:
     // -------------------------------------------------------------------
     const char *GetMagicFileName() const {
         return baseName.c_str();
@@ -269,7 +269,6 @@ public:
         return master;
     }
 
-public:
     // -------------------------------------------------------------------
     bool Exists(const char *pFile) const override {
         return created.find(std::string(pFile)) != created.end();

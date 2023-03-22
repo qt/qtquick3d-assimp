@@ -87,10 +87,6 @@ IRRImporter::IRRImporter() :
 }
 
 // ------------------------------------------------------------------------------------------------
-// Destructor, private as well
-IRRImporter::~IRRImporter() = default;
-
-// ------------------------------------------------------------------------------------------------
 // Returns whether the class can handle the format of the given file.
 bool IRRImporter::CanRead(const std::string &pFile, IOSystem *pIOHandler, bool /*checkSig*/) const {
 	static const char *tokens[] = { "irr_scene" };
@@ -837,12 +833,31 @@ void IRRImporter::GenerateGraph(Node *root, aiNode *rootOut, aiScene *scene,
 }
 
 // ------------------------------------------------------------------------------------------------
+void setupXmlTree(const std::string &filename, IOSystem *pIOHandler, pugi::xml_node &rootElement) {
+    std::unique_ptr<IOStream> file(pIOHandler->Open(filename));
+
+    // Check whether we can read from the file
+    if (file == nullptr) {
+        throw DeadlyImportError("Failed to open IRR file ", filename);
+    }
+
+    // Construct the irrXML parser
+    XmlParser st;
+    if (!st.parse(file.get())) {
+        throw DeadlyImportError("XML parse error while loading IRR file ", filename);
+    }
+    rootElement = st.getRootNode().child("irr_scene");
+}
+
+// ------------------------------------------------------------------------------------------------
 // Imports the given file into the given scene structure.
-void IRRImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSystem *pIOHandler) {
-	std::unique_ptr<IOStream> file(pIOHandler->Open(pFile));
+void IRRImporter::InternReadFile(const std::string &filename, aiScene *pScene, IOSystem *pIOHandler) {
+    pugi::xml_node rootElement;
+    setupXmlTree(filename, pIOHandler, rootElement);
+    //std::unique_ptr<IOStream> file(pIOHandler->Open(pFile));
 
 	// Check whether we can read from the file
-    if (file == nullptr) {
+    /* if (file == nullptr) {
         throw DeadlyImportError("Failed to open IRR file ", pFile);
     }
 
@@ -851,7 +866,7 @@ void IRRImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSy
     if (!st.parse( file.get() )) {
         throw DeadlyImportError("XML parse error while loading IRR file ", pFile);
     }
-    pugi::xml_node rootElement = st.getRootNode();
+    pugi::xml_node rootElement = st.getRootNode().child("irr_scene");*/
 
 	// The root node of the scene
 	Node *root = new Node(Node::DUMMY);
@@ -862,7 +877,7 @@ void IRRImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSy
 	Node *curParent = root;
 
 	// Scene-graph node we're currently working on
-	Node *curNode = nullptr;
+    Node *curNode = nullptr;
 
 	// List of output cameras
 	std::vector<aiCamera *> cameras;
@@ -872,7 +887,6 @@ void IRRImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSy
 
 	// Batch loader used to load external models
 	BatchLoader batch(pIOHandler);
-	//batch.SetBasePath(pFile);
 
 	cameras.reserve(5);
 	lights.reserve(5);
@@ -881,9 +895,7 @@ void IRRImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSy
 	unsigned int guessedAnimCnt = 0, guessedMeshCnt = 0, guessedMatCnt = 0;
 
 	// Parse the XML file
-
-	//while (reader->read())  {
-	for (pugi::xml_node child : rootElement.children())
+	for (const pugi::xml_node &child : rootElement.children())
 		switch (child.type()) {
 			case pugi::node_element:
 				if (!ASSIMP_stricmp(child.name(), "node")) {
@@ -907,47 +919,46 @@ void IRRImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSy
                      *  materials assigned (except lights, cameras and dummies, of course).
                      */
 					// ***********************************************************************
-					//const char *sz = reader->getAttributeValueSafe("type");
 					pugi::xml_attribute attrib = child.attribute("type");
 					Node *nd;
-					if (!ASSIMP_stricmp(attrib.name(), "mesh") || !ASSIMP_stricmp(attrib.name(), "octTree")) {
+                    if (!ASSIMP_stricmp(attrib.value(), "mesh") || !ASSIMP_stricmp(attrib.value(), "octTree")) {
 						// OctTree's and meshes are treated equally
 						nd = new Node(Node::MESH);
-					} else if (!ASSIMP_stricmp(attrib.name(), "cube")) {
+                    } else if (!ASSIMP_stricmp(attrib.value(), "cube")) {
 						nd = new Node(Node::CUBE);
 						++guessedMeshCnt;
-					} else if (!ASSIMP_stricmp(attrib.name(), "skybox")) {
+                    } else if (!ASSIMP_stricmp(attrib.value(), "skybox")) {
 						nd = new Node(Node::SKYBOX);
 						guessedMeshCnt += 6;
-					} else if (!ASSIMP_stricmp(attrib.name(), "camera")) {
+                    } else if (!ASSIMP_stricmp(attrib.value(), "camera")) {
 						nd = new Node(Node::CAMERA);
 
 						// Setup a temporary name for the camera
 						aiCamera *cam = new aiCamera();
 						cam->mName.Set(nd->name);
 						cameras.push_back(cam);
-					} else if (!ASSIMP_stricmp(attrib.name(), "light")) {
+                    } else if (!ASSIMP_stricmp(attrib.value(), "light")) {
 						nd = new Node(Node::LIGHT);
 
 						// Setup a temporary name for the light
 						aiLight *cam = new aiLight();
 						cam->mName.Set(nd->name);
 						lights.push_back(cam);
-					} else if (!ASSIMP_stricmp(attrib.name(), "sphere")) {
+                    } else if (!ASSIMP_stricmp(attrib.value(), "sphere")) {
 						nd = new Node(Node::SPHERE);
 						++guessedMeshCnt;
-					} else if (!ASSIMP_stricmp(attrib.name(), "animatedMesh")) {
+                    } else if (!ASSIMP_stricmp(attrib.value(), "animatedMesh")) {
 						nd = new Node(Node::ANIMMESH);
-					} else if (!ASSIMP_stricmp(attrib.name(), "empty")) {
+                    } else if (!ASSIMP_stricmp(attrib.value(), "empty")) {
 						nd = new Node(Node::DUMMY);
-					} else if (!ASSIMP_stricmp(attrib.name(), "terrain")) {
+                    } else if (!ASSIMP_stricmp(attrib.value(), "terrain")) {
 						nd = new Node(Node::TERRAIN);
-					} else if (!ASSIMP_stricmp(attrib.name(), "billBoard")) {
+                    } else if (!ASSIMP_stricmp(attrib.value(), "billBoard")) {
 						// We don't support billboards, so ignore them
 						ASSIMP_LOG_ERROR("IRR: Billboards are not supported by Assimp");
 						nd = new Node(Node::DUMMY);
 					} else {
-						ASSIMP_LOG_WARN("IRR: Found unknown node: ", attrib.name());
+                        ASSIMP_LOG_WARN("IRR: Found unknown node: ", attrib.value());
 
 						/*  We skip the contents of nodes we don't know.
                          *  We parse the transformation and all animators
@@ -992,10 +1003,7 @@ void IRRImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSy
 						++guessedAnimCnt;
 					}
 
-					/*  Parse all elements in the attributes block
-                     *  and process them.
-                     */
-					//					while (reader->read()) {
+					// Parse all elements in the attributes block and process them.
 					for (pugi::xml_node attrib : child.children()) {
 						if (attrib.type() == pugi::node_element) {
 							//if (reader->getNodeType() == EXN_ELEMENT) {
@@ -1083,10 +1091,9 @@ void IRRImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSy
 									if (prop.name == "FramesPerSecond" && Node::ANIMMESH == curNode->type) {
 										curNode->framesPerSecond = prop.value;
 									} else if (Node::CAMERA == curNode->type) {
-										/*  This is the vertical, not the horizontal FOV.
-                                    *  We need to compute the right FOV from the
-                                    *  screen aspect which we don't know yet.
-                                    */
+										//  This is the vertical, not the horizontal FOV.
+                                        //  We need to compute the right FOV from the
+                                        //  screen aspect which we don't know yet.
 										if (prop.name == "Fovy") {
 											cameras.back()->mHorizontalFOV = prop.value;
 										} else if (prop.name == "Aspect") {
@@ -1097,8 +1104,7 @@ void IRRImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSy
 											cameras.back()->mClipPlaneFar = prop.value;
 										}
 									} else if (Node::LIGHT == curNode->type) {
-										/*  Additional light information
-                                     */
+										// Additional light information
 										if (prop.name == "Attenuation") {
 											lights.back()->mAttenuationLinear = prop.value;
 										} else if (prop.name == "OuterCone") {
