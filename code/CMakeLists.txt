@@ -170,6 +170,8 @@ SET( Common_SRCS
   Common/StbCommon.h
   Common/Compression.cpp
   Common/Compression.h
+  Common/CodeConvert.cpp
+  Common/CodeConvert.h
   Common/BaseImporter.cpp
   Common/BaseProcess.cpp
   Common/BaseProcess.h
