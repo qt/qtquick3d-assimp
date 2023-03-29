@@ -55,7 +55,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using namespace Assimp;
 
 // Transformation matrix to convert from Assimp to IRR space
-const aiMatrix4x4 Assimp::AI_TO_IRR_MATRIX = aiMatrix4x4 (
+const aiMatrix4x4 Assimp::AI_TO_IRR_MATRIX = aiMatrix4x4(
     1.0f, 0.0f, 0.0f, 0.0f,
     0.0f, 0.0f, 1.0f, 0.0f,
     0.0f, 1.0f, 0.0f, 0.0f,
@@ -64,7 +64,7 @@ const aiMatrix4x4 Assimp::AI_TO_IRR_MATRIX = aiMatrix4x4 (
 // ------------------------------------------------------------------------------------------------
 // read a property in hexadecimal format (i.e. ffffffff)
 void IrrlichtBase::ReadHexProperty(HexProperty &out ) {
-	for (pugi::xml_attribute attrib : mNode->attributes()) {
+	for (const pugi::xml_attribute &attrib : mNode->attributes()) {
         if (!ASSIMP_stricmp(attrib.name(), "name")) {
             out.name = std::string( attrib.value() );
         } else if (!ASSIMP_stricmp(attrib.name(),"value")) {
@@ -77,7 +77,7 @@ void IrrlichtBase::ReadHexProperty(HexProperty &out ) {
 // ------------------------------------------------------------------------------------------------
 // read a decimal property
 void IrrlichtBase::ReadIntProperty(IntProperty & out) {
-	for (pugi::xml_attribute attrib : mNode->attributes()) {
+	for (const pugi::xml_attribute &attrib : mNode->attributes()) {
 		if (!ASSIMP_stricmp(attrib.name(), "name")) {
 			out.name = std::string(attrib.value());
         } else if (!ASSIMP_stricmp(attrib.value(),"value")) {
@@ -90,7 +90,7 @@ void IrrlichtBase::ReadIntProperty(IntProperty & out) {
 // ------------------------------------------------------------------------------------------------
 // read a string property
 void IrrlichtBase::ReadStringProperty( StringProperty& out) {
-	for (pugi::xml_attribute attrib : mNode->attributes()) {
+	for (const pugi::xml_attribute &attrib : mNode->attributes()) {
 		if (!ASSIMP_stricmp(attrib.name(), "name")) {
 			out.name = std::string(attrib.value());
 		} else if (!ASSIMP_stricmp(attrib.name(), "value")) {
@@ -103,7 +103,7 @@ void IrrlichtBase::ReadStringProperty( StringProperty& out) {
 // ------------------------------------------------------------------------------------------------
 // read a boolean property
 void IrrlichtBase::ReadBoolProperty(BoolProperty &out) {
-	for (pugi::xml_attribute attrib : mNode->attributes()) {
+	for (const pugi::xml_attribute &attrib : mNode->attributes()) {
 		if (!ASSIMP_stricmp(attrib.name(), "name")){
 			out.name = std::string(attrib.value());
 		} else if (!ASSIMP_stricmp(attrib.name(), "value")) {
@@ -116,7 +116,7 @@ void IrrlichtBase::ReadBoolProperty(BoolProperty &out) {
 // ------------------------------------------------------------------------------------------------
 // read a float property
 void IrrlichtBase::ReadFloatProperty(FloatProperty &out) {
-	for (pugi::xml_attribute attrib : mNode->attributes()) {
+	for (const pugi::xml_attribute &attrib : mNode->attributes()) {
 		if (!ASSIMP_stricmp(attrib.name(), "name")) {
 			out.name = std::string(attrib.value());
 		} else if (!ASSIMP_stricmp(attrib.name(), "value")) {
@@ -129,7 +129,7 @@ void IrrlichtBase::ReadFloatProperty(FloatProperty &out) {
 // ------------------------------------------------------------------------------------------------
 // read a vector property
 void IrrlichtBase::ReadVectorProperty( VectorProperty &out ) {
-	for (pugi::xml_attribute attrib : mNode->attributes()) {
+	for (const pugi::xml_attribute &attrib : mNode->attributes()) {
 		if (!ASSIMP_stricmp(attrib.name(), "name")) {
 			out.name = std::string(attrib.value());
 		} else if (!ASSIMP_stricmp(attrib.name(), "value")) {
@@ -179,7 +179,7 @@ aiMaterial* IrrlichtBase::ParseMaterial(unsigned int& matFlags) {
     int cnt  = 0; // number of used texture channels
     unsigned int nd = 0;
 
-    for (pugi::xml_node child : mNode->children()) {
+    for (const pugi::xml_node &child : mNode->children()) {
 		if (!ASSIMP_stricmp(child.name(), "color")) { // Hex properties
 			HexProperty prop;
 			ReadHexProperty(prop);

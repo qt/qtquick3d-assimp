@@ -70,14 +70,6 @@ static const aiImporterDesc desc = {
 };
 
 // ------------------------------------------------------------------------------------------------
-// Constructor to be privately used by Importer
-IRRMeshImporter::IRRMeshImporter() = default;
-
-// ------------------------------------------------------------------------------------------------
-// Destructor, private as well
-IRRMeshImporter::~IRRMeshImporter() = default;
-
-// ------------------------------------------------------------------------------------------------
 // Returns whether the class can handle the format of the given file.
 bool IRRMeshImporter::CanRead(const std::string &pFile, IOSystem *pIOHandler, bool /*checkSig*/) const {
 	/* NOTE: A simple check for the file extension is not enough

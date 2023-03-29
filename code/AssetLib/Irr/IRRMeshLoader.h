@@ -62,8 +62,8 @@ namespace Assimp {
  */
 class IRRMeshImporter : public BaseImporter, public IrrlichtBase {
 public:
-    IRRMeshImporter();
-    ~IRRMeshImporter() override;
+    IRRMeshImporter() = default;
+    ~IRRMeshImporter() override = default;
 
     // -------------------------------------------------------------------
     /** Returns whether the class can handle the format of the given file.

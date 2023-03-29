@@ -833,7 +833,7 @@ void IRRImporter::GenerateGraph(Node *root, aiNode *rootOut, aiScene *scene,
 }
 
 // ------------------------------------------------------------------------------------------------
-void setupXmlTree(const std::string &filename, IOSystem *pIOHandler, pugi::xml_node &rootElement) {
+void setupXmlTree(const std::string &filename, IOSystem *pIOHandler, XmlParser &xmlParser, pugi::xml_node &rootElement) {
     std::unique_ptr<IOStream> file(pIOHandler->Open(filename));
 
     // Check whether we can read from the file
@@ -842,18 +842,94 @@ void setupXmlTree(const std::string &filename, IOSystem *pIOHandler, pugi::xml_n
     }
 
     // Construct the irrXML parser
-    XmlParser st;
-    if (!st.parse(file.get())) {
+    if (!xmlParser.parse(file.get())) {
         throw DeadlyImportError("XML parse error while loading IRR file ", filename);
     }
-    rootElement = st.getRootNode().child("irr_scene");
+    rootElement = xmlParser.getRootNode().child("irr_scene");
 }
+
+void IRRImporter::parseIrrNode(pugi::xml_node &node) {
+        // ***********************************************************************
+        /*  What we're going to do with the node depends
+                     *  on its type:
+                     *
+                     *  "mesh" - Load a mesh from an external file
+                     *  "cube" - Generate a cube
+                     *  "skybox" - Generate a skybox
+                     *  "light" - A light source
+                     *  "sphere" - Generate a sphere mesh
+                     *  "animatedMesh" - Load an animated mesh from an external file
+                     *    and join its animation channels with ours.
+                     *  "empty" - A dummy node
+                     *  "camera" - A camera
+                     *  "terrain" - a terrain node (data comes from a heightmap)
+                     *  "billboard", ""
+                     *
+                     *  Each of these nodes can be animated and all can have multiple
+                     *  materials assigned (except lights, cameras and dummies, of course).
+                     */
+        // ***********************************************************************
+        pugi::xml_attribute attrib = node.attribute("type");
+        Node *nd;
+        if (!ASSIMP_stricmp(attrib.value(), "mesh") || !ASSIMP_stricmp(attrib.value(), "octTree")) {
+            // OctTree's and meshes are treated equally
+            nd = new Node(Node::MESH);
+        } else if (!ASSIMP_stricmp(attrib.value(), "cube")) {
+            nd = new Node(Node::CUBE);
+            ++guessedMeshCnt;
+        } else if (!ASSIMP_stricmp(attrib.value(), "skybox")) {
+            nd = new Node(Node::SKYBOX);
+            guessedMeshCnt += 6;
+        } else if (!ASSIMP_stricmp(attrib.value(), "camera")) {
+            nd = new Node(Node::CAMERA);
+
+            // Setup a temporary name for the camera
+            aiCamera *cam = new aiCamera();
+            cam->mName.Set(nd->name);
+            cameras.push_back(cam);
+        } else if (!ASSIMP_stricmp(attrib.value(), "light")) {
+            nd = new Node(Node::LIGHT);
+
+            // Setup a temporary name for the light
+            aiLight *cam = new aiLight();
+            cam->mName.Set(nd->name);
+            lights.push_back(cam);
+        } else if (!ASSIMP_stricmp(attrib.value(), "sphere")) {
+            nd = new Node(Node::SPHERE);
+            ++guessedMeshCnt;
+        } else if (!ASSIMP_stricmp(attrib.value(), "animatedMesh")) {
+            nd = new Node(Node::ANIMMESH);
+        } else if (!ASSIMP_stricmp(attrib.value(), "empty")) {
+            nd = new Node(Node::DUMMY);
+        } else if (!ASSIMP_stricmp(attrib.value(), "terrain")) {
+            nd = new Node(Node::TERRAIN);
+        } else if (!ASSIMP_stricmp(attrib.value(), "billBoard")) {
+            // We don't support billboards, so ignore them
+            ASSIMP_LOG_ERROR("IRR: Billboards are not supported by Assimp");
+            nd = new Node(Node::DUMMY);
+        } else {
+            ASSIMP_LOG_WARN("IRR: Found unknown node: ", attrib.value());
+
+            /*  We skip the contents of nodes we don't know.
+                         *  We parse the transformation and all animators
+                         *  and skip the rest.
+                         */
+            nd = new Node(Node::DUMMY);
+        }
+
+        /* Attach the newly created node to the scene-graph
+                     */
+        curNode = nd;
+        nd->parent = curParent;
+        curParent->children.push_back(nd);
+    }
 
 // ------------------------------------------------------------------------------------------------
 // Imports the given file into the given scene structure.
 void IRRImporter::InternReadFile(const std::string &filename, aiScene *pScene, IOSystem *pIOHandler) {
     pugi::xml_node rootElement;
-    setupXmlTree(filename, pIOHandler, rootElement);
+    XmlParser xmlParser;
+    setupXmlTree(filename, pIOHandler, xmlParser, rootElement);
     //std::unique_ptr<IOStream> file(pIOHandler->Open(pFile));
 
 	// Check whether we can read from the file

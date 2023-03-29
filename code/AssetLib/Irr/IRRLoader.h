@@ -78,6 +78,7 @@ protected:
     const aiImporterDesc* GetInfo () const override;
     void InternReadFile( const std::string& pFile, aiScene* pScene, IOSystem* pIOHandler) override;
     void SetupProperties(const Importer* pImp) override;
+    void parseIrrNode();
 
 private:
     /** Data structure for a scene-graph node animator
