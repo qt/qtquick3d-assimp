@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ master ]
 
+permissions:
+  contents: read # to fetch code (actions/checkout)
+
 jobs:
   job:
     name: ${{ matrix.name }}-build-and-test
@@ -43,8 +46,10 @@ jobs:
             toolchain: ninja-vs-win64-cxx17
 
     steps:
-    - uses: actions/checkout@v3
-    
+    - uses: actions/checkout@v4
+      with:
+          submodules: true
+          
     - uses: lukka/get-cmake@latest
     
     - uses: ilammy/msvc-dev-cmd@v1
@@ -64,16 +69,10 @@ jobs:
 
     - name: Checkout Hunter toolchains
       if: endsWith(matrix.name, 'hunter')
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: cpp-pm/polly
         path: cmake/polly
-
-    - name: Remove contrib directory for Hunter builds
-      if: contains(matrix.name, 'hunter')
-      uses: JesseTG/rm@v1.0.3
-      with:
-        path: contrib
 
     - name: Cache DX SDK
       id: dxcache
@@ -94,7 +93,7 @@ jobs:
     - name: Set Windows specific CMake arguments
       if: contains(matrix.name, 'windows')
       id: windows_extra_cmake_args
-      run: echo "::set-output name=args::-DASSIMP_BUILD_ASSIMP_TOOLS=1 -DASSIMP_BUILD_ASSIMP_VIEW=1"
+      run: echo "::set-output name=args::-DASSIMP_BUILD_ASSIMP_TOOLS=1 -DASSIMP_BUILD_ASSIMP_VIEW=1 -DASSIMP_BUILD_ZLIB=1"
     
     - name: Set Hunter specific CMake arguments
       if: contains(matrix.name, 'hunter')
@@ -110,7 +109,7 @@ jobs:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
         cmakeAppendedArgs: '-GNinja -DCMAKE_BUILD_TYPE=Release ${{ steps.windows_extra_cmake_args.outputs.args }} ${{ steps.hunter_extra_cmake_args.outputs.args }}'
-        buildWithCMakeArgs: '-- -j 24 -v'
+        buildWithCMakeArgs: '--parallel 24 -v'
         buildDirectory: '${{ github.workspace }}/build/'
         
     - name: Exclude certain tests in Hunter specific builds

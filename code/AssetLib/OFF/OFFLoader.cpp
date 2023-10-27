@@ -109,8 +109,8 @@ void OFFImporter::InternReadFile( const std::string& pFile, aiScene* pScene, IOS
     std::unique_ptr<IOStream> file( pIOHandler->Open( pFile, "rb"));
 
     // Check whether we can read from the file
-    if( file.get() == nullptr) {
-        throw DeadlyImportError( "Failed to open OFF file ", pFile, ".");
+    if (file == nullptr) {
+      throw DeadlyImportError("Failed to open OFF file ", pFile, ".");
     }
 
     // allocate storage and copy the contents of the file to a memory buffer
@@ -284,17 +284,18 @@ void OFFImporter::InternReadFile( const std::string& pFile, aiScene* pScene, IOS
     for (unsigned int i = 0; i < numFaces; ) {
         if(!GetNextLine(buffer,line)) {
             ASSIMP_LOG_ERROR("OFF: The number of faces in the header is incorrect");
-            break;
+            throw DeadlyImportError("OFF: The number of faces in the header is incorrect");
         }
         unsigned int idx;
         sz = line; SkipSpaces(&sz);
         idx = strtoul10(sz,&sz);
         if(!idx || idx > 9) {
-	    ASSIMP_LOG_ERROR("OFF: Faces with zero indices aren't allowed");
+	        ASSIMP_LOG_ERROR("OFF: Faces with zero indices aren't allowed");
             --mesh->mNumFaces;
+            ++i;
             continue;
-	}
-	faces->mNumIndices = idx;
+	    }
+	    faces->mNumIndices = idx;
         faces->mIndices = new unsigned int[faces->mNumIndices];
         for (unsigned int m = 0; m < faces->mNumIndices;++m) {
             SkipSpaces(&sz);

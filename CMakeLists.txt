@@ -1,6 +1,6 @@
 # Open Asset Import Library (assimp)
 # ----------------------------------------------------------------------
-# Copyright (c) 2006-2022, assimp team
+# Copyright (c) 2006-2023, assimp team
 #
 # All rights reserved.
 #
@@ -49,14 +49,13 @@ option(ASSIMP_HUNTER_ENABLED "Enable Hunter package manager support" OFF)
 IF(ASSIMP_HUNTER_ENABLED)
   include("cmake-modules/HunterGate.cmake")
   HunterGate(
-    URL "https://github.com/cpp-pm/hunter/archive/v0.24.0.tar.gz"
-    SHA1 "a3d7f4372b1dcd52faa6ff4a3bd5358e1d0e5efd"
+    URL "https://github.com/cpp-pm/hunter/archive/v0.24.18.tar.gz"
+    SHA1 "1292e4d661e1770d6d6ca08c12c07cf34a0bf718"
   )
-
   add_definitions(-DASSIMP_USE_HUNTER)
 ENDIF()
 
-PROJECT(Assimp VERSION 5.2.4)
+PROJECT(Assimp VERSION 5.3.0)
 
 # All supported options ###############################################
 
@@ -82,10 +81,6 @@ OPTION( ASSIMP_ANDROID_JNIIOSYSTEM
 )
 OPTION( ASSIMP_NO_EXPORT
   "Disable Assimp's export functionality."
-  OFF
-)
-OPTION( ASSIMP_BUILD_ZLIB
-  "Build your own zlib"
   OFF
 )
 OPTION( ASSIMP_BUILD_ASSIMP_TOOLS
@@ -133,6 +128,18 @@ OPTION ( ASSIMP_IGNORE_GIT_HASH
    "Don't call git to get the hash."
    OFF
 )
+
+IF (WIN32)
+  OPTION( ASSIMP_BUILD_ZLIB
+    "Build your own zlib"
+    ON
+  )
+ELSE()
+  OPTION( ASSIMP_BUILD_ZLIB
+    "Build your own zlib"
+    ON
+  )
+ENDIF()
 
 IF (WIN32)
   # Use subset of Windows.h
@@ -193,12 +200,9 @@ SET (ASSIMP_VERSION ${ASSIMP_VERSION_MAJOR}.${ASSIMP_VERSION_MINOR}.${ASSIMP_VER
 SET (ASSIMP_SOVERSION 5)
 
 SET( ASSIMP_PACKAGE_VERSION "0" CACHE STRING "the package-specific version used for uploading the sources" )
-if(NOT ASSIMP_HUNTER_ENABLED)
-  # Enable C++17 support globally
-  set(CMAKE_CXX_STANDARD 17)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
-  set(CMAKE_C_STANDARD 99)
-endif()
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD 99)
 
 IF(NOT ASSIMP_IGNORE_GIT_HASH)
   # Get the current working branch
@@ -246,8 +250,7 @@ IF( UNIX )
   # Use GNUInstallDirs for Unix predefined directories
   INCLUDE(GNUInstallDirs)
   # Ensure that we do not run into issues like http://www.tcm.phy.cam.ac.uk/sw/inodes64.html on 32 bit linux
-  IF( ${OPERATING_SYSTEM} MATCHES "Android")
-  ELSE()
+  IF(NOT ${OPERATING_SYSTEM} MATCHES "Android")
     IF ( CMAKE_SIZEOF_VOID_P EQUAL 4) # only necessary for 32-bit linux
       ADD_DEFINITIONS(-D_FILE_OFFSET_BITS=64 )
     ENDIF()
@@ -257,37 +260,42 @@ ENDIF()
 # Grouped compiler settings ########################################
 IF ((CMAKE_C_COMPILER_ID MATCHES "GNU") AND NOT MINGW)
   IF(NOT ASSIMP_HUNTER_ENABLED)
-    SET(CMAKE_CXX_STANDARD 17)
     SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
+  ENDIF()
+  
+  IF(CMAKE_CXX_COMPILER_VERSION GREATER_EQUAL 13)
+    MESSAGE(STATUS "GCC13 detected disabling \"-Wdangling-reference\" in Cpp files as it appears to be a false positive")
+    ADD_COMPILE_OPTIONS("$<$<COMPILE_LANGUAGE:CXX>:-Wno-dangling-reference>")
   ENDIF()
   # hide all not-exported symbols
   IF(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "mips64" )
-	SET(CMAKE_CXX_FLAGS "-mxgot -fvisibility=hidden -fno-strict-aliasing -Wall ${CMAKE_CXX_FLAGS}")
-	SET(CMAKE_C_FLAGS "-fno-strict-aliasing ${CMAKE_C_FLAGS}")
-	SET(LIBSTDC++_LIBRARIES -lstdc++)
+    SET(CMAKE_CXX_FLAGS "-mxgot -fvisibility=hidden -fno-strict-aliasing -Wall ${CMAKE_CXX_FLAGS}")
+    SET(CMAKE_C_FLAGS "-fno-strict-aliasing ${CMAKE_C_FLAGS}")
+    SET(LIBSTDC++_LIBRARIES -lstdc++)
   ELSE()
-	SET(CMAKE_CXX_FLAGS "-fvisibility=hidden -fno-strict-aliasing -Wall ${CMAKE_CXX_FLAGS}")
-	SET(CMAKE_C_FLAGS "-fno-strict-aliasing ${CMAKE_C_FLAGS}")
-	SET(LIBSTDC++_LIBRARIES -lstdc++)
+    SET(CMAKE_CXX_FLAGS "-fvisibility=hidden -fno-strict-aliasing -Wall ${CMAKE_CXX_FLAGS}")
+    SET(CMAKE_C_FLAGS "-fno-strict-aliasing ${CMAKE_C_FLAGS}")
+    SET(LIBSTDC++_LIBRARIES -lstdc++)
   ENDIF()
 ELSEIF(MSVC)
   # enable multi-core compilation with MSVC
   IF(CMAKE_CXX_COMPILER_ID MATCHES "Clang" ) # clang-cl
-    ADD_COMPILE_OPTIONS(/bigobj /W4 /WX )
+    ADD_COMPILE_OPTIONS(/bigobj)
   ELSE() # msvc
-    ADD_COMPILE_OPTIONS(/MP /bigobj /W4 /WX)
+    ADD_COMPILE_OPTIONS(/MP /bigobj)
   ENDIF()
+  
   # disable "elements of array '' will be default initialized" warning on MSVC2013
   IF(MSVC12)
     ADD_COMPILE_OPTIONS(/wd4351)	
   ENDIF()
-  ADD_COMPILE_OPTIONS(/wd4244) #supress warning for double to float conversion if Double precission is activated
+  # supress warning for double to float conversion if Double precission is activated
+  ADD_COMPILE_OPTIONS(/wd4244) 
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_DEBUG /Zi /Od")
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
+  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
   SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG:FULL /PDBALTPATH:%_PDB% /OPT:REF /OPT:ICF")
 ELSEIF (CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
   IF(NOT ASSIMP_HUNTER_ENABLED)
-    SET(CMAKE_CXX_STANDARD 17)
     SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
   ENDIF()
   SET(CMAKE_CXX_FLAGS "-fvisibility=hidden -fno-strict-aliasing -Wall -Wno-long-long ${CMAKE_CXX_FLAGS}" )
@@ -312,17 +320,17 @@ ENDIF()
 
 IF ( IOS AND NOT ASSIMP_HUNTER_ENABLED)
   IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fembed-bitcode -Og")
+    SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fembed-bitcode -Og")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fembed-bitcode -Og")
   ELSE()
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fembed-bitcode -O3")
+    SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fembed-bitcode -O3")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fembed-bitcode -O3")
-    # Experimental for pdb generation
   ENDIF()
 ENDIF()
 
 IF (ASSIMP_COVERALLS)
   MESSAGE(STATUS "Coveralls enabled")
+  
   INCLUDE(Coveralls)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
@@ -330,14 +338,16 @@ ENDIF()
 
 IF (ASSIMP_ASAN)
   MESSAGE(STATUS "AddressSanitizer enabled")
+  
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+  SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fsanitize=address")
 ENDIF()
 
 IF (ASSIMP_UBSAN)
   MESSAGE(STATUS "Undefined Behavior sanitizer enabled")
+
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined,shift,shift-exponent,integer-divide-by-zero,unreachable,vla-bound,null,return,signed-integer-overflow,bounds,float-divide-by-zero,float-cast-overflow,nonnull-attribute,returns-nonnull-attribute,bool,enum,vptr,pointer-overflow,builtin -fno-sanitize-recover=all")
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined,shift,shift-exponent,integer-divide-by-zero,unreachable,vla-bound,null,return,signed-integer-overflow,bounds,float-divide-by-zero,float-cast-overflow,nonnull-attribute,returns-nonnull-attribute,bool,enum,vptr,pointer-overflow,builtin -fno-sanitize-recover=all")
+  SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fsanitize=undefined,shift,shift-exponent,integer-divide-by-zero,unreachable,vla-bound,null,return,signed-integer-overflow,bounds,float-divide-by-zero,float-cast-overflow,nonnull-attribute,returns-nonnull-attribute,bool,enum,vptr,pointer-overflow,builtin -fno-sanitize-recover=all")
 ENDIF()
 
 INCLUDE (FindPkgMacros)
@@ -387,13 +397,6 @@ IF (NOT TARGET uninstall AND ASSIMP_INSTALL)
   CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules/cmake_uninstall.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
   ADD_CUSTOM_TARGET(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
 ENDIF()
-
-# cmake configuration files
-if(${BUILD_SHARED_LIBS})
-  set(BUILD_LIB_TYPE SHARED)
-else()
-  set(BUILD_LIB_TYPE STATIC)
-endif()
 
 IF( UNIX )
   # Use GNUInstallDirs for Unix predefined directories
@@ -487,7 +490,11 @@ ELSE()
     FIND_PACKAGE(ZLIB)
   ENDIF()
 
-  IF( NOT ZLIB_FOUND )
+  IF ( NOT ZLIB_FOUND AND NOT ASSIMP_BUILD_ZLIB )
+    message( FATAL_ERROR
+      "Build configured with -DASSIMP_BUILD_ZLIB=OFF but unable to find zlib"
+    )
+  ELSEIF( NOT ZLIB_FOUND )
     MESSAGE(STATUS "compiling zlib from sources")
     INCLUDE(CheckIncludeFile)
     INCLUDE(CheckTypeSize)
@@ -560,7 +567,11 @@ IF (ASSIMP_BUILD_NONFREE_C4D_IMPORTER)
     SET(C4D_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Cineware/includes")
 
     # pick the correct prebuilt library
-    IF(MSVC15)
+    IF(MSVC143)
+      SET(C4D_LIB_POSTFIX "_2022")
+    ELSEIF(MSV142)
+      SET(C4D_LIB_POSTFIX "_2019")
+    ELSEIF(MSVC15)
       SET(C4D_LIB_POSTFIX "_2017")
     ELSEIF(MSVC14)
       SET(C4D_LIB_POSTFIX "_2015")
@@ -572,7 +583,7 @@ IF (ASSIMP_BUILD_NONFREE_C4D_IMPORTER)
       SET(C4D_LIB_POSTFIX "_2010")
     ELSE()
       MESSAGE( FATAL_ERROR
-        "C4D is currently only supported with MSVC 10, 11, 12, 14"
+        "C4D is currently only supported with MSVC 10, 11, 12, 14, 14.2, 14.3"
       )
     ENDIF()
 
@@ -657,13 +668,13 @@ ELSE()
       set_target_properties(draco_encoder draco_decoder PROPERTIES
         EXCLUDE_FROM_ALL TRUE
         EXCLUDE_FROM_DEFAULT_BUILD TRUE
-        )
+      )
 
       # Do build the draco shared library
       set_target_properties(${draco_LIBRARIES} PROPERTIES
         EXCLUDE_FROM_ALL FALSE
         EXCLUDE_FROM_DEFAULT_BUILD FALSE
-        )
+      )
 
       TARGET_USE_COMMON_OUTPUT_DIRECTORY(${draco_LIBRARIES})
       TARGET_USE_COMMON_OUTPUT_DIRECTORY(draco_encoder)
@@ -680,8 +691,7 @@ ELSE()
         FRAMEWORK DESTINATION ${ASSIMP_LIB_INSTALL_DIR}
         COMPONENT ${LIBASSIMP_COMPONENT}
         INCLUDES DESTINATION include
-    )
-
+      )
     ENDIF()
   ENDIF()
 ENDIF()
@@ -767,7 +777,7 @@ IF ( ASSIMP_INSTALL )
     SET(CPACK_DEBIAN_PACKAGE_SECTION  "libs" )
     SET(CPACK_DEBIAN_PACKAGE_DEPENDS  "${CPACK_COMPONENTS_ALL}")
     SET(CPACK_DEBIAN_PACKAGE_SUGGESTS)
-    SET(cPACK_DEBIAN_PACKAGE_NAME     "assimp")
+    SET(CPACK_DEBIAN_PACKAGE_NAME     "assimp")
     SET(CPACK_DEBIAN_PACKAGE_REMOVE_SOURCE_FILES contrib/gtest contrib/zlib workspaces test doc obj samples packaging)
     SET(CPACK_DEBIAN_PACKAGE_SOURCE_COPY svn export --force)
     SET(CPACK_DEBIAN_CHANGELOG)
@@ -804,6 +814,10 @@ if(WIN32)
       SET(ASSIMP_MSVC_VERSION "vc140")
     ELSEIF(MSVC15)
       SET(ASSIMP_MSVC_VERSION "vc141")
+    ELSEIF(MSV142)
+      SET(ASSIMP_MSVC_VERSION "vc142")
+    ELSEIF(MSVC143)
+      SET(ASSIMP_MSVC_VERSION "vc143")
     ENDIF()
   ENDIF()
 

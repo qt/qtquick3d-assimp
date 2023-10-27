@@ -75,14 +75,7 @@ static const aiImporterDesc desc = {
 
 // ------------------------------------------------------------------------------------------------
 // Constructor to be privately used by Importer
-XFileImporter::XFileImporter()
-: mBuffer() {
-    // empty
-}
-
-// ------------------------------------------------------------------------------------------------
-// Destructor, private as well
-XFileImporter::~XFileImporter() = default;
+XFileImporter::XFileImporter() = default;
 
 // ------------------------------------------------------------------------------------------------
 // Returns whether the class can handle the format of the given file.
@@ -102,7 +95,7 @@ const aiImporterDesc* XFileImporter::GetInfo () const {
 void XFileImporter::InternReadFile( const std::string& pFile, aiScene* pScene, IOSystem* pIOHandler) {
     // read file into memory
     std::unique_ptr<IOStream> file( pIOHandler->Open( pFile));
-    if ( file.get() == nullptr ) {
+    if (file == nullptr) {
         throw DeadlyImportError( "Failed to open file ", pFile, "." );
     }
 
@@ -585,7 +578,7 @@ void XFileImporter::ConvertMaterials( aiScene* pScene, std::vector<XFile::Materi
                 aiString name;
                 pScene->mMaterials[b]->Get( AI_MATKEY_NAME, name);
                 if( strcmp( name.C_Str(), oldMat.mName.data()) == 0 ) {
-                    oldMat.sceneIndex = a;
+                    oldMat.sceneIndex = b;
                     break;
                 }
             }

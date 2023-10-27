@@ -44,7 +44,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #ifndef ASSIMP_BUILD_NO_ASE_IMPORTER
-
 #ifndef ASSIMP_BUILD_NO_3DS_IMPORTER
 
 // internal headers
@@ -88,10 +87,6 @@ ASEImporter::ASEImporter() :
 }
 
 // ------------------------------------------------------------------------------------------------
-// Destructor, private as well
-ASEImporter::~ASEImporter() = default;
-
-// ------------------------------------------------------------------------------------------------
 // Returns whether the class can handle the format of the given file.
 bool ASEImporter::CanRead(const std::string &pFile, IOSystem *pIOHandler, bool /*checkSig*/) const {
     static const char *tokens[] = { "*3dsmax_asciiexport" };
@@ -122,7 +117,7 @@ void ASEImporter::InternReadFile(const std::string &pFile,
     std::unique_ptr<IOStream> file(pIOHandler->Open(pFile, "rb"));
 
     // Check whether we can read from the file
-    if (file.get() == nullptr) {
+    if (file == nullptr) {
         throw DeadlyImportError("Failed to open ASE file ", pFile, ".");
     }
 
@@ -325,21 +320,6 @@ void ASEImporter::BuildAnimations(const std::vector<BaseNode *> &nodes) {
                 // <baseName>.Target.
                 aiNodeAnim *nd = pcAnim->mChannels[iNum++] = new aiNodeAnim();
                 nd->mNodeName.Set(me->mName + ".Target");
-
-                // If there is no input position channel we will need
-                // to supply the default position from the node's
-                // local transformation matrix.
-                /*TargetAnimationHelper helper;
-                if (me->mAnim.akeyPositions.empty())
-                {
-                    aiMatrix4x4& mat = (*i)->mTransform;
-                    helper.SetFixedMainAnimationChannel(aiVector3D(
-                        mat.a4, mat.b4, mat.c4));
-                }
-                else helper.SetMainAnimationChannel (&me->mAnim.akeyPositions);
-                helper.SetTargetAnimationChannel (&me->mTargetAnim.akeyPositions);
-
-                helper.Process(&me->mTargetAnim.akeyPositions);*/
 
                 // Allocate the key array and fill it
                 nd->mNumPositionKeys = (unsigned int)me->mTargetAnim.akeyPositions.size();
