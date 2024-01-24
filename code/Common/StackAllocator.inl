@@ -42,6 +42,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "StackAllocator.h"
 #include <assimp/ai_assert.h>
 
+#include <algorithm>
+
 using namespace Assimp;
 
 inline StackAllocator::StackAllocator() {
