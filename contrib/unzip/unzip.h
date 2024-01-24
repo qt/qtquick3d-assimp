@@ -43,12 +43,12 @@
 #ifndef _unz64_H
 #define _unz64_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifndef _ZLIB_H
 #include "zlib.h"
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 #ifndef  _ZLIBIOAPI_H
