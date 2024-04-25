@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2024, assimp team
 
 All rights reserved.
 
@@ -43,6 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <assimp/commonMetaData.h>
 #include <assimp/postprocess.h>
+#include <assimp/config.h>
 #include <assimp/scene.h>
 #include <assimp/Exporter.hpp>
 #include <assimp/Importer.hpp>
@@ -504,6 +505,143 @@ TEST_F(utglTF2ImportExport, bug_import_simple_skin) {
     EXPECT_NE(nullptr, scene);
 }
 
+bool checkSkinnedScene(const aiScene *scene){
+    float eps = 0.001f;
+    bool result = true;
+    EXPECT_EQ(scene->mNumMeshes, 1u);
+    EXPECT_EQ(scene->mMeshes[0]->mNumBones, 10u);
+    EXPECT_EQ(scene->mMeshes[0]->mNumVertices, 4u);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[0].x - -1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[0].y - -1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[0].z - 0), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[1].x - 1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[1].y - -1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[1].z - 0), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[2].x - 1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[2].y - 1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[2].z - 0), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[3].x - -1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[3].y - 1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[3].z - 0), eps);
+
+    unsigned int numWeights[] = {4u, 4u, 4u, 4u, 2u , 1u, 1u, 2u, 1u, 1u};
+    float weights[10][4] = {{0.207f, 0.291f, 0.057f, 0.303f},
+                        {0.113f, 0.243f, 0.499f, 0.251f},
+                        {0.005f, 0.010f, 0.041f, 0.093f},
+                        {0.090f, 0.234f, 0.404f, 0.243f},
+                        {0.090f, 0.222f, 0.000f, 0.000f},
+                        {0.216f, 0.000f, 0.000f, 0.000f},
+                        {0.058f, 0.000f, 0.000f, 0.000f},
+                        {0.086f, 0.000f, 0.000f, 0.111f},
+                        {0.088f, 0.000f, 0.000f, 0.000f},
+                        {0.049f, 0.000f, 0.000f, 0.000f}};
+    for (size_t boneIndex = 0; boneIndex < 10u; ++boneIndex) {
+        EXPECT_EQ(scene->mMeshes[0]->mBones[boneIndex]->mNumWeights, numWeights[boneIndex]);
+        std::map<unsigned int, float> map;
+        for (size_t jointIndex = 0; jointIndex < scene->mMeshes[0]->mBones[boneIndex]->mNumWeights; ++jointIndex){
+            auto key = scene->mMeshes[0]->mBones[boneIndex]->mWeights[jointIndex].mVertexId;
+            auto weight = scene->mMeshes[0]->mBones[boneIndex]->mWeights[jointIndex].mWeight;
+            map[key] = weight;
+        }
+
+        for (unsigned int jointIndex = 0; jointIndex < scene->mMeshes[0]->mBones[boneIndex]->mNumWeights; ++jointIndex) {
+            auto weight = map[jointIndex];
+            EXPECT_LT(abs(ai_real(weight) - ai_real(weights[boneIndex][jointIndex])), 0.002);
+        }
+    }
+
+    return result;
+}
+
+void checkSkinnedSceneLimited(const aiScene *scene){
+    float eps = 0.001f;
+    EXPECT_EQ(scene->mNumMeshes, 1u);
+    EXPECT_EQ(scene->mMeshes[0]->mNumBones, 10u);
+    EXPECT_EQ(scene->mMeshes[0]->mNumVertices, 4u);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[0].x - -1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[0].y - -1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[0].z - 0), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[1].x - 1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[1].y - -1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[1].z - 0), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[2].x - 1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[2].y - 1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[2].z - 0), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[3].x - -1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[3].y - 1), eps);
+    EXPECT_LT(abs(scene->mMeshes[0]->mVertices[3].z - 0), eps);
+
+    unsigned int numWeights[] = {4u, 4u, 1u, 4u, 1u , 1u, 1u, 1u, 1u, 1u};
+    float weights[10][4] = {{0.207f, 0.291f, 0.057f, 0.303f},
+                            {0.113f, 0.243f, 0.499f, 0.251f},
+                            {0.000f, 0.000f, 0.041f, 0.000f},
+                            {0.090f, 0.234f, 0.404f, 0.243f},
+                            {0.000f, 0.222f, 0.000f, 0.000f},
+                            {0.216f, 0.000f, 0.000f, 0.000f},
+                            {0.000f, 0.000f, 0.000f, 0.000f},
+                            {0.000f, 0.000f, 0.000f, 0.111f},
+                            {0.000f, 0.000f, 0.000f, 0.000f},
+                            {0.000f, 0.000f, 0.000f, 0.000f}};
+    for (unsigned int boneIndex = 0; boneIndex < 10u; ++boneIndex) {
+        EXPECT_EQ(scene->mMeshes[0]->mBones[boneIndex]->mNumWeights, numWeights[boneIndex]);
+        std::map<unsigned int, float> map;
+        for (unsigned int jointIndex = 0; jointIndex < scene->mMeshes[0]->mBones[boneIndex]->mNumWeights; ++jointIndex){
+            auto key = scene->mMeshes[0]->mBones[boneIndex]->mWeights[jointIndex].mVertexId;
+            auto weight = scene->mMeshes[0]->mBones[boneIndex]->mWeights[jointIndex].mWeight;
+            map[key] = weight;
+        }
+        for (unsigned int jointIndex = 0; jointIndex < scene->mMeshes[0]->mBones[boneIndex]->mNumWeights; ++jointIndex) {
+            auto weight = map[jointIndex];
+            EXPECT_LT(std::abs(ai_real(weight) - ai_real(weights[boneIndex][jointIndex])), 0.002);
+        }
+    }
+}
+
+TEST_F(utglTF2ImportExport, bug_import_simple_skin2) {
+    Assimp::Importer importer;
+    Assimp::Exporter exporter;
+    const aiScene *scene = importer.ReadFile(
+            ASSIMP_TEST_MODELS_DIR "/glTF2/simple_skin/quad_skin.glb",
+            aiProcess_ValidateDataStructure);
+    checkSkinnedScene(scene);
+
+    ASSERT_EQ(aiReturn_SUCCESS, exporter.Export(scene, "glb2",
+            ASSIMP_TEST_MODELS_DIR "/glTF2/simple_skin/quad_four_out.glb"));
+    ASSERT_EQ(aiReturn_SUCCESS, exporter.Export(scene, "gltf2",
+            ASSIMP_TEST_MODELS_DIR "/glTF2/simple_skin/quad_four_out.gltf"));
+
+    // enable more than four bones per vertex
+    Assimp::ExportProperties properties = Assimp::ExportProperties();
+    properties.SetPropertyBool(
+      AI_CONFIG_EXPORT_GLTF_UNLIMITED_SKINNING_BONES_PER_VERTEX, true);
+    ASSERT_EQ(aiReturn_SUCCESS, exporter.Export(scene, "glb2",
+            ASSIMP_TEST_MODELS_DIR "/glTF2/simple_skin/quad_all_out.glb", 0u, &properties));
+    ASSERT_EQ(aiReturn_SUCCESS, exporter.Export(scene, "gltf2",
+            ASSIMP_TEST_MODELS_DIR "/glTF2/simple_skin/quad_all_out.gltf", 0u, &properties));
+
+    // check skinning data of both exported files for limited number bones per vertex
+    const aiScene *limitedSceneImported = importer.ReadFile(
+            ASSIMP_TEST_MODELS_DIR "/glTF2/simple_skin/quad_four_out.gltf",
+            aiProcess_ValidateDataStructure);
+    checkSkinnedSceneLimited(limitedSceneImported);
+    limitedSceneImported = importer.ReadFile(
+            ASSIMP_TEST_MODELS_DIR "/glTF2/simple_skin/quad_four_out.glb",
+            aiProcess_ValidateDataStructure);
+    checkSkinnedSceneLimited(limitedSceneImported);
+
+    // check skinning data of both exported files for unlimited number bones per vertex
+    const aiScene *sceneImported = importer.ReadFile(
+            ASSIMP_TEST_MODELS_DIR "/glTF2/simple_skin/quad_all_out.gltf",
+            aiProcess_ValidateDataStructure);
+    checkSkinnedScene(sceneImported);
+    sceneImported = importer.ReadFile(
+            ASSIMP_TEST_MODELS_DIR "/glTF2/simple_skin/quad_all_out.glb",
+            aiProcess_ValidateDataStructure);
+    checkSkinnedScene(sceneImported);
+
+
+}
+
 TEST_F(utglTF2ImportExport, import_cameras) {
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/cameras/Cameras.gltf",
@@ -850,3 +988,27 @@ TEST_F(utglTF2ImportExport, noSchemaFound) {
     EXPECT_NE(scene, nullptr);
     EXPECT_STREQ(importer.GetErrorString(), "");
 }
+
+// ------------------------------------------------------------------------------------------------
+TEST_F(utglTF2ImportExport, testSetIdentityMatrixEpsilon) {
+//    Assimp::Exporter exporter;
+    Assimp::ExportProperties properties = Assimp::ExportProperties();
+    EXPECT_EQ(AI_CONFIG_CHECK_IDENTITY_MATRIX_EPSILON_DEFAULT,
+            properties.GetPropertyFloat("CHECK_IDENTITY_MATRIX_EPSILON",
+                    AI_CONFIG_CHECK_IDENTITY_MATRIX_EPSILON_DEFAULT));
+    aiMatrix4x4 m;
+    m = aiMatrix4x4(1.02f, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+    EXPECT_FALSE(m.IsIdentity());
+    m = aiMatrix4x4(1.001f, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+    EXPECT_TRUE(m.IsIdentity());
+
+    bool b = properties.SetPropertyFloat("CHECK_IDENTITY_MATRIX_EPSILON", 0.0001f);
+    EXPECT_TRUE(!b);
+    ai_real epsilon = properties.GetPropertyFloat("CHECK_IDENTITY_MATRIX_EPSILON", 0.01f);
+    EXPECT_EQ(0.0001f, epsilon);
+    m = aiMatrix4x4(1.0002f, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+    EXPECT_FALSE(m.IsIdentity(epsilon));
+    m = aiMatrix4x4(1.00009f, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+    EXPECT_TRUE(m.IsIdentity(epsilon));
+}
+

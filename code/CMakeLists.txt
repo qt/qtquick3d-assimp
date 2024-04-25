@@ -1,6 +1,6 @@
 # Open Asset Import Library (assimp)
 # ----------------------------------------------------------------------
-# Copyright (c) 2006-2022, assimp team
+# Copyright (c) 2006-2024, assimp team
 #
 # All rights reserved.
 #
@@ -42,7 +42,7 @@
 # 3) Add libassimp using the file lists (eliminates duplication of file names between
 #    source groups and library command)
 #
-cmake_minimum_required( VERSION 3.10 )
+cmake_minimum_required( VERSION 3.22 )
 SET( HEADER_PATH ../include/assimp )
 
 if(NOT ANDROID AND ASSIMP_ANDROID_JNIIOSYSTEM)
@@ -923,7 +923,7 @@ IF(ASSIMP_HUNTER_ENABLED)
   hunter_add_package(utf8)
   find_package(utf8cpp CONFIG REQUIRED)
 ELSE()
-  # utf8 is header-only, so Assimp doesn't need to do anything.
+  INCLUDE_DIRECTORIES("../contrib/utf8cpp/source")
 ENDIF()
 
 # polyclipping
@@ -1193,6 +1193,10 @@ ENDIF ()
 
 TARGET_USE_COMMON_OUTPUT_DIRECTORY(assimp)
 
+add_compile_options(
+  "$<$<CONFIG:DEBUG>:-O0;-g3;-ggdb>"
+)
+
 IF (ASSIMP_WARNINGS_AS_ERRORS)
   MESSAGE(STATUS "Treating all warnings as errors (for assimp library only)")
   IF (MSVC)
@@ -1380,7 +1384,12 @@ ENDIF()
 IF(NOT ASSIMP_HUNTER_ENABLED)
   if (UNZIP_FOUND)
     INCLUDE_DIRECTORIES(${UNZIP_INCLUDE_DIRS})
-    TARGET_LINK_LIBRARIES(assimp ${UNZIP_LIBRARIES})
+    # TODO if cmake required version has been updated to >3.12.0, collapse this to the second case only
+    if(${CMAKE_VERSION} VERSION_LESS "3.12.0")
+      TARGET_LINK_LIBRARIES(assimp ${UNZIP_LIBRARIES})
+    else()
+      TARGET_LINK_LIBRARIES(assimp ${UNZIP_LINK_LIBRARIES})
+    endif()
   else ()
     INCLUDE_DIRECTORIES("../")
   endif ()
