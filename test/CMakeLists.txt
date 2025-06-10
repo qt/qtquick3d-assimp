@@ -1,6 +1,6 @@
 # Open Asset Import Library (assimp)
 # ----------------------------------------------------------------------
-# Copyright (c) 2006-2024, assimp team
+# Copyright (c) 2006-2025, assimp team
 #
 # All rights reserved.
 #
@@ -86,6 +86,7 @@ SET( COMMON
   unit/TestModelFactory.h
   unit/utTypes.cpp
   unit/utVersion.cpp
+  unit/Common/utParsingUtils.cpp
   unit/utProfiler.cpp
   unit/utSharedPPData.cpp
   unit/utStringUtils.cpp
@@ -100,6 +101,7 @@ SET( COMMON
   unit/Common/utBase64.cpp
   unit/Common/utHash.cpp
   unit/Common/utBaseProcess.cpp
+  unit/Common/utLogger.cpp
 )
 
 SET(Geometry 
@@ -148,7 +150,6 @@ SET( IMPORTERS
   #unit/utM3DImportExport.cpp
   unit/utMDCImportExport.cpp
   unit/utAssbinImportExport.cpp
-  unit/utUSDImport.cpp
   unit/ImportExport/utAssjsonImportExport.cpp
   unit/ImportExport/utCOBImportExport.cpp
   unit/ImportExport/utOgreImportExport.cpp
@@ -168,6 +169,12 @@ SET( IMPORTERS
   unit/ImportExport/Terragen/utTerragenImportExport.cpp
   unit/ImportExport/Pbrt/utPbrtImportExport.cpp
 )
+
+if(ASSIMP_BUILD_USD_IMPORTER)
+  list( APPEND IMPORTERS
+    unit/utUSDImport.cpp
+  )
+endif()
 
 SET( MATERIAL
   unit/utMaterialSystem.cpp
