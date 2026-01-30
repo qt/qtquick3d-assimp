@@ -1,6 +1,6 @@
 # Open Asset Import Library (assimp)
 # ----------------------------------------------------------------------
-# Copyright (c) 2006-2025, assimp team
+# Copyright (c) 2006-2026, assimp team
 #
 # All rights reserved.
 #
@@ -58,6 +58,10 @@ endif()
 # Add the temporary output directories to the library path to make sure the
 # Assimp library can be found, even if it is not installed system-wide yet.
 LINK_DIRECTORIES( ${Assimp_BINARY_DIR} ${AssetImporter_BINARY_DIR}/lib )
+
+SET(TOOLS
+    unit/Tools/TestTools.h
+)
 
 SET( COMMON
   unit/utSimd.cpp
@@ -143,8 +147,6 @@ SET( IMPORTERS
   unit/utBlendImportMaterials.cpp
   unit/utBlenderWork.cpp
   unit/utBVHImportExport.cpp
-  unit/utColladaExport.cpp
-  unit/utColladaImportExport.cpp
   unit/utCSMImportExport.cpp
   unit/utB3DImportExport.cpp
   #unit/utM3DImportExport.cpp
@@ -173,6 +175,18 @@ SET( IMPORTERS
 if(ASSIMP_BUILD_USD_IMPORTER)
   list( APPEND IMPORTERS
     unit/utUSDImport.cpp
+  )
+endif()
+
+if(ASSIMP_BUILD_COLLADA_EXPORTER)
+  list( APPEND IMPORTERS
+    unit/utColladaExport.cpp
+  )
+endif()
+
+if(ASSIMP_BUILD_COLLADA_IMPORTER)
+  list( APPEND IMPORTERS
+    unit/utColladaImportExport.cpp
   )
 endif()
 
@@ -219,6 +233,7 @@ SOURCE_GROUP( UnitTests\\GeometryTools FILES ${Geometry} )
 SOURCE_GROUP( UnitTests\\ImportExport  FILES ${IMPORTERS} )
 SOURCE_GROUP( UnitTests\\Material      FILES ${MATERIAL} )
 SOURCE_GROUP( UnitTests\\Math          FILES ${MATH} )
+SOURCE_GROUP( UnitTests\\Tools         FILES ${TOOLS} )
 SOURCE_GROUP( UnitTests\\PostProcess   FILES ${POST_PROCESSES})
 
 add_executable( unit
@@ -227,11 +242,12 @@ add_executable( unit
     ../code/Common/Version.cpp
 	../code/Common/Base64.cpp
 	${COMMON}
-  ${Geometry}
+    ${Geometry}
 	${IMPORTERS}
 	${MATERIAL}
 	${MATH}
-  ${POST_PROCESSES}
+    ${POST_PROCESSES}
+    ${TOOLS}
 )
 
 if(ASSIMP_HUNTER_ENABLED)
